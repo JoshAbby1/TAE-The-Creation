@@ -2,17 +2,51 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
+
+  const { prompt, image } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Missing prompt" });
+  }
+
   try {
-    const { provider, prompt, imageUrl, ratio = "9:16", steps = 28, cfg = 7, seed = null } = req.body || {};
-    if (!prompt) throw new Error("prompt required");
-    if (!provider || !["nanobanana", "seedreem4"].includes(provider)) {
-      throw new Error('provider must be "nanobanana" or "seedreem4"');
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" +
+        process.env.GOOGLE_API_KEY,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Generate a high-quality AI image from this prompt: ${prompt}${
+                    image ? `. Use this image for reference: ${image}` : ""
+                  }`,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Gemini API error");
     }
 
-    // TODO: swap these placeholder calls for real provider APIs when you have keys.
-    const fakeUrl = `https://example.com/fake-image.jpg?provider=${provider}&ratio=${encodeURIComponent(ratio)}`;
-    return res.status(200).json({ imageUrl: fakeUrl, filename: `img_${Date.now()}.webp` });
-  } catch (e) {
-    return res.status(400).json({ error: String(e.message || e) });
+    // Parse the image URL from Gemini’s response
+    const imageUrl =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "https://placehold.co/600x400?text=AI+Image+Error";
+
+    res.status(200).json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message || "Image generation failed",
+    });
   }
 }
