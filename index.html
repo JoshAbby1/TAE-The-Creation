@@ -1,40 +1,41 @@
-<script>
-  const form = document.getElementById("form");
-  const promptInput = document.getElementById("prompt");
-  const fileInput = document.getElementById("file");
-  const out = document.getElementById("out");
-  const btn = document.getElementById("btn");
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    btn.disabled = true;
-    out.textContent = "Generating...";
-
-    // read file -> base64 (with data: prefix)
-    let imageBase64 = "";
-    const file = fileInput.files?.[0];
-    if (file) {
-      const bytes = await file.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(bytes)));
-      imageBase64 = `data:${file.type};base64,${b64}`;
-    }
-
-    const prompt = promptInput.value || "";
-
-    const resp = await fetch("/api/image-generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, imageBase64 }),
-    });
-
-    if (!resp.ok) {
-      out.textContent = "Generation failed. Please try again.";
-      btn.disabled = false;
-      return;
-    }
-
-    const { imageUrl } = await resp.json();
-    out.innerHTML = `<img src="${imageUrl}" style="max-width:100%;border-radius:8px" />`;
-    btn.disabled = false;
-  });
-</script>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TAE Creations – Sanity Check</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;margin:0;padding:24px;background:#0b0b0c;color:#eee}
+      .card{max-width:720px;margin:0 auto;background:#111;border:1px solid #222;border-radius:12px;padding:24px}
+      button{padding:10px 14px;border:1px solid #333;background:#1a1a1a;color:#fff;border-radius:8px}
+      a{color:#8ab4ff}
+      pre{white-space:pre-wrap;background:#0f0f10;border:1px solid #222;padding:12px;border-radius:8px}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>TAE Creations</h1>
+      <p>If you can read this, routing is OK and the crash was in your previous front-end JS.</p>
+      <p>
+        API quick test (should return 405 JSON): 
+        <a href="/api/image-generate" target="_blank">/api/image-generate</a>
+      </p>
+      <button id="ping">Ping API</button>
+      <pre id="out"></pre>
+    </div>
+    <script>
+      document.getElementById('ping').onclick = async () => {
+        try {
+          const r = await fetch('/api/image-generate', { method: 'GET' });
+          document.getElementById('out').textContent =
+            'Status: ' + r.status + '\n' + (await r.text());
+        } catch (e) {
+          document.getElementById('out').textContent = 'Error: ' + e;
+        }
+      };
+      // surface runtime errors so you don't get a blank screen
+      window.addEventListener('error', e => alert('JS error: ' + e.message));
+      window.addEventListener('unhandledrejection', e => alert('Promise: ' + e.reason));
+    </script>
+  </body>
+</html>
