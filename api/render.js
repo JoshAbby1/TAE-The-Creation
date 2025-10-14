@@ -1,6 +1,6 @@
 export const config = {
   api: {
-    bodyParser: true, // ✅ Allow normal JSON
+    bodyParser: true,
   },
 };
 
@@ -12,40 +12,30 @@ export default async function handler(req, res) {
   try {
     const { prompt } = req.body;
 
-    if (!prompt || prompt.trim().length === 0) {
-      return res.status(400).json({ error: "Prompt missing" });
+    if (!prompt) {
+      return res.status(400).json({ error: "Missing prompt" });
     }
 
-    // ✅ Use Fal.ai (no key required for testing)
-    const falResponse = await fetch("https://fal.run/fal-ai/flux-pro", {
+    // ✅ New working endpoint (Public test model)
+    const response = await fetch("https://api-inference.huggingface.co/models/prompthero/openjourney-v4", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: prompt,
-        aspect_ratio: "9:16",
-        output_format: "url",
-      }),
+      body: JSON.stringify({ inputs: prompt }),
     });
 
-    if (!falResponse.ok) {
-      const text = await falResponse.text();
-      throw new Error("FAL error: " + text);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error("API error: " + text);
     }
 
-    const data = await falResponse.json();
+    // This model returns raw image bytes
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const imageUrl = `data:image/png;base64,${base64}`;
 
-    const imageUrl =
-      data?.images?.[0]?.url || data?.image_url || data?.url || null;
-
-    if (imageUrl) {
-      res.status(200).json({ image: imageUrl });
-    } else {
-      res.status(500).json({ error: "No image URL returned", data });
-    }
+    res.status(200).json({ image: imageUrl });
   } catch (err) {
     console.error("Server error:", err);
-    res
-      .status(500)
-      .json({ error: "Server crashed during generation", details: err.message });
+    res.status(500).json({ error: "Server crashed during generation", details: err.message });
   }
 }
