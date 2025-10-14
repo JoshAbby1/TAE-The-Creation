@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     // ✅ Free image generator (Pollinations AI)
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       prompt
-    )}?nologo=true&width=1024&height=1024`;
+  )})?nologo=true&width=1080&height=1920`;
 
     // Test the URL to confirm it's reachable
     const test = await fetch(imageUrl);
