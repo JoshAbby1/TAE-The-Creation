@@ -2,153 +2,139 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TAE Creations — Image Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAE Creations — Image</title>
   <style>
-    :root { --bg:#0b0b0c; --panel:#111214; --text:#eaeaea; }
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
-    .wrap{max-width:860px;margin:28px auto;padding:0 16px}
-    .card{background:var(--panel);border:1px solid #222;border-radius:14px;padding:18px}
-    h1{margin:0 0 12px;font-size:22px}
-    label{display:block;margin:14px 0 6px;font-weight:600}
-    input[type="text"], textarea, select{width:100%;background:#0f1011;border:1px solid #2a2b2f;color:var(--text);border-radius:10px;padding:12px}
-    textarea{min-height:92px;resize:vertical}
-    .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
-    button{width:100%;padding:14px 16px;border:0;border-radius:12px;background:#ececec;color:#111;font-weight:700;cursor:pointer}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .thumb{max-width:100%;border-radius:12px;border:1px solid #222;margin-top:10px}
-    .hint{opacity:.7;font-size:13px}
-    .result{margin-top:16px}
-    .error{color:#ff6b6b;margin-top:8px}
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:#0b0b0c; color:#eaeaea; }
+    .wrap { max-width: 860px; margin: 36px auto; padding: 0 16px; }
+    h1 { font-size: 28px; margin: 0 0 16px; }
+    label { display:block; margin: 14px 0 6px; font-weight: 600; }
+    textarea { width:100%; min-height:110px; padding:12px; border-radius:10px; border:1px solid #2a2a30; background:#121214; color:#eaeaea; resize:vertical; }
+    select, input[type="file"] { width:100%; padding:10px; border-radius:10px; border:1px solid #2a2a30; background:#121214; color:#eaeaea; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    button { width:100%; padding:14px; border-radius:12px; border:0; background:#5b7cff; color:white; font-weight:700; cursor:pointer; }
+    button:disabled{ opacity:.6; cursor:default; }
+    .hint { opacity:.75; font-size:13px; }
+    .thumb { margin-top:10px; max-width:100%; border-radius:12px; border:1px solid #2a2a30; }
+    .result { margin-top:22px; }
+    .error { color:#ff6b6b; margin-top:10px; font-weight:600; }
+    .ok { color:#79ffa8; margin-top:10px; }
+    .bar { display:flex; gap:14px; align-items:center; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <h1>TAE Creations — Image</h1>
+    <h1>TAE Creations – Image</h1>
 
-      <label for="prompt">Prompt</label>
-      <textarea id="prompt" placeholder="Describe the change..."></textarea>
+    <label>Prompt</label>
+    <textarea id="prompt" placeholder="Describe the image (e.g., 'holding a Coke can, studio light, ultra-realistic')."></textarea>
 
-      <div class="row">
-        <div>
-          <label for="model">Model</label>
-          <select id="model">
-            <option value="seedream">Seedream 4.0 (photoreal)</option>
-            <option value="banana">Nano Banana (stylish/fast)</option>
-          </select>
-        </div>
-        <div>
-          <label for="strength">Edit Strength (img→img)</label>
-          <input id="strength" type="range" min="0.1" max="1" step="0.05" value="0.55" />
-          <div class="hint">Lower = keep face closer. Try 0.45–0.6</div>
-        </div>
+    <div class="row">
+      <div>
+        <label>Model</label>
+        <select id="model">
+          <option value="seedream4">Seedream 4.0 (photo-real)</option>
+          <option value="nanobanana">Nano Banana (fast)</option>
+        </select>
+        <div class="hint">You can switch models. Both return **no watermark**.</div>
       </div>
-
-      <label for="neg">Negative Prompt (optional)</label>
-      <input id="neg" type="text" placeholder="cartoon, anime, painting, deformed, text, watermark" value="cartoon, anime, painting, deformed, text, watermark" />
-
-      <div class="row">
-        <div>
-          <label>Upload a photo (optional)</label>
-          <input id="file" type="file" accept="image/*" />
-          <img id="preview" class="thumb" hidden />
-        </div>
-        <div>
-          <label>Output Size</label>
-          <select id="size">
-            <option value="768x1365">9:16 — 768×1365</option>
-            <option value="1024x1820">9:16 — 1024×1820</option>
-            <option value="640x1138">9:16 — 640×1138 (faster)</option>
-          </select>
-          <div class="hint">Always 9:16 as requested</div>
-        </div>
-      </div>
-
-      <div style="margin-top:14px">
-        <button id="go">Generate</button>
-        <div id="err" class="error" hidden></div>
-      </div>
-
-      <div class="result">
-        <h3>Result</h3>
-        <img id="out" class="thumb" />
+      <div>
+        <label>Aspect</label>
+        <select id="aspect">
+          <option value="1080x1920">9:16 (1080×1920)</option>
+          <option value="1024x1024">1:1 (1024×1024)</option>
+          <option value="1920x1080">16:9 (1920×1080)</option>
+        </select>
       </div>
     </div>
+
+    <label style="margin-top:16px;">Upload a reference photo (optional)</label>
+    <input type="file" id="file" accept="image/*" />
+    <img id="thumb" class="thumb" style="display:none;" alt="preview" />
+
+    <div class="bar" style="margin:18px 0;">
+      <button id="go">Generate</button>
+      <div id="note" class="hint"></div>
+    </div>
+
+    <div id="msg"></div>
+    <div class="result"><img id="out" style="max-width:100%; border-radius:12px; display:none;"/></div>
   </div>
 
   <script>
-    const fileInput = document.getElementById('file');
-    const preview = document.getElementById('preview');
-    fileInput.addEventListener('change', () => {
-      const f = fileInput.files[0];
-      if (!f) { preview.hidden = true; return; }
-      const url = URL.createObjectURL(f);
-      preview.src = url;
-      preview.hidden = false;
+    const el = (id)=>document.getElementById(id);
+    const promptEl = el('prompt');
+    const modelEl  = el('model');
+    const aspectEl = el('aspect');
+    const fileEl   = el('file');
+    const thumbEl  = el('thumb');
+    const outEl    = el('out');
+    const msgEl    = el('msg');
+    const goBtn    = el('go');
+    const noteEl   = el('note');
+
+    // show preview
+    fileEl.addEventListener('change', () => {
+      const f = fileEl.files?.[0];
+      if(!f){ thumbEl.style.display='none'; return; }
+      const r = new FileReader();
+      r.onload = () => { thumbEl.src = r.result; thumbEl.style.display='block'; };
+      r.readAsDataURL(f);
     });
 
-    document.getElementById('go').addEventListener('click', async () => {
-      const btn = document.getElementById('go');
-      const out = document.getElementById('out');
-      const err = document.getElementById('err');
-      err.hidden = true; err.textContent = '';
-      out.src = '';
-      btn.disabled = true; btn.textContent = 'Generating…';
+    async function fileToDataURL(file){
+      const buf = await file.arrayBuffer();
+      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      return `data:${file.type};base64,${b64}`;
+    }
 
-      try {
-        const prompt = document.getElementById('prompt').value.trim();
-        const model = document.getElementById('model').value;
-        const neg = document.getElementById('neg').value.trim();
-        const strength = Number(document.getElementById('strength').value);
-        const [w, h] = document.getElementById('size').value.split('x').map(n => Number(n));
+    goBtn.onclick = async () => {
+      try{
+        goBtn.disabled = true; msgEl.textContent=''; outEl.style.display='none';
+        noteEl.textContent = 'Working…';
 
-        // read file -> base64 (optional)
+        // size from aspect
+        let [w,h] = aspectEl.value.split('x').map(Number);
+
+        // read file -> data URL
         let imageBase64 = '';
-        const f = fileInput.files[0];
-        if (f) {
-          const buf = await f.arrayBuffer();
-          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-          imageBase64 = `data:${f.type};base64,${b64}`;
-        }
+        const f = fileEl.files?.[0];
+        if (f) imageBase64 = await fileToDataURL(f);
 
-        // realism booster for likeness
-        const realism =
-          "ultra photorealistic, natural skin texture, detailed eyes, " +
-          "soft lighting, 85mm dslr, depth of field, film grain";
-
-        const body = {
-          prompt: realism + (prompt ? ', ' + prompt : ''),
-          imageBase64,
-          model,
-          params: {
-            width: w,
-            height: h,
-            strength,
-            guidance_scale: 4.5,
-            num_inference_steps: 28,
-            negative_prompt: neg
-          }
-        };
-
-        const r = await fetch('/api/image-generate', {
+        // POST to API
+        const resp = await fetch('/api/image-generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            prompt: promptEl.value || '',
+            model: modelEl.value,   // "seedream4" | "nanobanana"
+            width: w, height: h,
+            imageBase64
+          })
         });
 
-        const data = await r.json();
-        if (!r.ok || !data.imageUrl) {
-          throw new Error(data?.error || 'Generation failed');
+        if(!resp.ok){
+          const t = await resp.text();
+          msgEl.innerHTML = `<div class="error">Generation failed: ${t}</div>`;
+          noteEl.textContent='';
+          return;
         }
-        out.src = data.imageUrl;
-      } catch (e) {
-        err.textContent = e.message || 'Generation failed';
-        err.hidden = false;
-      } finally {
-        btn.disabled = false; btn.textContent = 'Generate';
+
+        const data = await resp.json();
+        if(data.imageUrl){
+          outEl.src = data.imageUrl;
+          outEl.style.display='block';
+          msgEl.innerHTML = `<div class="ok">Done.</div>`;
+        }else{
+          msgEl.innerHTML = `<div class="error">No image returned.</div>`;
+        }
+      }catch(err){
+        msgEl.innerHTML = `<div class="error">${err}</div>`;
+      }finally{
+        goBtn.disabled = false; noteEl.textContent='';
       }
-    });
+    };
   </script>
 </body>
 </html>
