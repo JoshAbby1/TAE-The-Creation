@@ -64,7 +64,7 @@
   </div>
 
   <script>
-async function fileToBase64(file){
+async function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -73,25 +73,46 @@ async function fileToBase64(file){
   });
 }
 
-async function generate(){
-  const prompt = document.getElementById("prompt").value;
-  const provider = document.querySelector("input[name='provider']:checked")?.value || "nanobanana";
-  const ratio = document.getElementById("ratio")?.value || "9:16";
-  const fileInput = document.getElementById("referencePhoto");
+async function generate() {
+  const prompt = document.getElementById("prompt").value.trim();
+  const provider = document.getElementById("provider").value;
+  const aspect = document.getElementById("aspect")?.value || "9:16";
+  const fileInput = document.querySelector('input[type="file"]');
   const file = fileInput?.files[0];
-  const imageBase64 = file ? await fileToBase64(file) : null;
+  const outputImg = document.getElementById("output");
 
-  const res = await fetch("/api/render", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, provider, ratio, imageBase64 })
-  });
+  if (!prompt) return alert("Please enter a prompt first.");
 
-  const data = await res.json();
-  const output = document.getElementById("output");
-  if (data.imageUrl) output.src = data.imageUrl;
-  else if (data.videoUrl) output.src = data.videoUrl;
-  else alert(data.error || "Generation failed");
+  let imageBase64 = "";
+  if (file) {
+    imageBase64 = await fileToBase64(file);
+  }
+
+  try {
+    const res = await fetch("/api/render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        provider,
+        ratio: aspect,
+        imageBase64
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error generating image");
+      return;
+    }
+
+    outputImg.src = data.imageUrl;
+    outputImg.style.display = "block";
+  } catch (err) {
+    console.error(err);
+    alert("Fetch failed — check your internet or redeploy");
+  }
 }
 </script>
 </body>
