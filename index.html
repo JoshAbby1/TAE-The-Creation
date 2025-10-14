@@ -29,16 +29,17 @@
 
     <label>Prompt</label>
     <textarea id="prompt" placeholder="Describe the image (e.g., 'holding a Coke can, studio light, ultra-realistic')."></textarea>
-
+<label for="provider">Choose Generator:</label>
+<select id="provider">
+  <option value="fal-photo">Photo-match (free)</option>
+</select>
+    <button onclick="generate()">Generate</button>
+<img id="output" style="width:100%;margin-top:1rem">
     <div class="row">
       <div>
         <label>Model</label>
         <select id="model">
-          <option value="seedream4">Seedream 4.0 (photo-real)</option>
-          <option value="nanobanana">Nano Banana (fast)</option>
-        </select>
-        <div class="hint">You can switch models. Both return **no watermark**.</div>
-      </div>
+    
       <div>
         <label>Aspect</label>
         <select id="aspect">
