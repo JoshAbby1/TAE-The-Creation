@@ -13,28 +13,43 @@ export default async function handler(req, res) {
 
     let resp;
 
-    if (imageBase64) {
+   if (imageBase64) {
   // ---------- IMAGE -> IMAGE (edit) ----------
-  const modelUrl = 'https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix';
+  const modelUrl =
+    'https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix';
 
   const fd = new FormData();
+
+  // keep full-quality pixels (don’t downscale to jpg first)
   fd.append('image', new Blob([toBuffer(imageBase64)], { type: 'image/png' }), 'input.png');
 
-  // Force realism and identity consistency
-  const instruction = `${prompt}. keep same person, face, pose, lighting and background. ultra photorealistic photo, natural skin texture, no painting style`;
+  // Strong instruction to keep identity + realism
+  const instruction =
+    `${prompt}. keep SAME person, SAME face, SAME pose and lighting. ` +
+    `hyper-realistic photo, natural skin texture, no painting, no cartoon, no anime`;
+
   fd.append('prompt', instruction);
 
-  // Photoreal-focused settings
-  fd.append('num_inference_steps', '30');
-  fd.append('guidance_scale', '6.5');
-  fd.append('image_guidance_scale', '2.0');
-  fd.append('strength', '0.30');
+  // --- Make it stick to the original face ---
+  // lower = preserves more of the original; start 0.15–0.2
+  fd.append('strength', '0.15');
 
-  // Avoid stylised / cartoonish outputs
+  // nudge with text, but not too much
+  fd.append('guidance_scale', '7');
+
+  // how strongly to follow the input image (higher = more faithful)
+  fd.append('image_guidance_scale', '2.4');
+
+  // stop stylization & artifacts
   fd.append(
     'negative_prompt',
-    'cartoon, painting, illustration, anime, cgi, 3d, plastic skin, smooth wax skin, overexposed, deformed, extra fingers, watermark, text'
+    'cartoon, painting, illustration, anime, cgi, 3d render, plastic/waxy skin, over-smooth, watermark, text, logo, extra fingers'
   );
+
+  // --- 9:16 output (portrait). Pick a size that’s not too huge for free tier. ---
+  // 1024x1820 ≈ 9:16 (close enough); you can try 1152x2048 later.
+  fd.append('width', '1024');
+  fd.append('height', '1820');
 
   resp = await fetch(modelUrl, {
     method: 'POST',
