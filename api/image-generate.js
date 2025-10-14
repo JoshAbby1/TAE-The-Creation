@@ -1,52 +1,21 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
-  }
-
-  const { prompt, image } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: "Missing prompt" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" +
-        process.env.GOOGLE_API_KEY,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Generate a high-quality AI image from this prompt: ${prompt}${
-                    image ? `. Use this image for reference: ${image}` : ""
-                  }`,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Gemini API error");
+    const { prompt } = req.body || {};
+    if (!prompt) {
+      return res.status(400).json({ error: 'Missing prompt' });
     }
 
-    // Parse the image URL from Gemini’s response
+    // TEMP: always return a placeholder image based on the prompt
     const imageUrl =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "https://placehold.co/600x400?text=AI+Image+Error";
+      `https://dummyimage.com/1024x1024/000/fff.png&text=${encodeURIComponent(prompt)}`;
 
-    res.status(200).json({ imageUrl });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message || "Image generation failed",
-    });
+    return res.status(200).json({ imageUrl });
+  } catch (err) {
+    console.error('image-generate error:', err);
+    return res.status(500).json({ error: err.message || 'Server error' });
   }
 }
