@@ -14,9 +14,31 @@ export default async function handler(req, res) {
     let resp;
 
     if (imageBase64) {
-      // ---------- IMAGE -> IMAGE (edit) ----------
-      const modelUrl = 'https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix';
+  // ---------- IMAGE -> IMAGE (edit) ----------
+  const modelUrl = 'https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix';
 
-      // Use undici FormData/Blob in Node 18+ (Vercel runtime supports it)
-      const fd = new FormData();
-      fd.append('image', new Blob([
+  const fd = new FormData();
+  fd.append('image', new Blob([toBuffer(imageBase64)], { type: 'image/png' }), 'input.png');
+
+  // Force realism and identity consistency
+  const instruction = `${prompt}. keep same person, face, pose, lighting and background. ultra photorealistic photo, natural skin texture, no painting style`;
+  fd.append('prompt', instruction);
+
+  // Photoreal-focused settings
+  fd.append('num_inference_steps', '30');
+  fd.append('guidance_scale', '6.5');
+  fd.append('image_guidance_scale', '2.0');
+  fd.append('strength', '0.30');
+
+  // Avoid stylised / cartoonish outputs
+  fd.append(
+    'negative_prompt',
+    'cartoon, painting, illustration, anime, cgi, 3d, plastic skin, smooth wax skin, overexposed, deformed, extra fingers, watermark, text'
+  );
+
+  resp = await fetch(modelUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.HF_API_KEY}` },
+    body: fd
+  });
+}
