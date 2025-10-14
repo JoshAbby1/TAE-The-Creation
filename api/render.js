@@ -18,7 +18,7 @@ async function pollinations(prompt, width, height) {
 }
 
 async function falFluxPro({ prompt, b64, ratio }) {
-  // Force output_format to JPEG
+  // send FLAT JSON payload (not nested under input)
   return fetch("https://fal.run/fal-ai/flux-pro", {
     method: "POST",
     headers: {
@@ -26,16 +26,14 @@ async function falFluxPro({ prompt, b64, ratio }) {
       Authorization: `Key ${process.env.FAL_KEY}`,
     },
     body: JSON.stringify({
-      input: {
-        prompt,
-        image_url: `data:image/jpeg;base64,${b64}`,
-        strength: 0.35,
-        aspect_ratio: String(ratio),
-        output_format: "jpeg", // ✅ Force JPEG (Fal rejects 'url')
-        guidance_scale: 3.5,
-        num_inference_steps: 28,
-        seed: Math.floor(Math.random() * 1e9),
-      },
+      prompt,
+      image_url: `data:image/jpeg;base64,${b64}`,
+      strength: 0.35,
+      aspect_ratio: String(ratio),
+      output_format: "jpeg", // ✅ flat + correct format
+      guidance_scale: 3.5,
+      num_inference_steps: 28,
+      seed: Math.floor(Math.random() * 1e9),
     }),
   });
 }
@@ -98,6 +96,7 @@ export default async function handler(req, res) {
 
     const resp = await falFluxPro({ prompt, b64: imageBase64, ratio });
     const text = await resp.text();
+
     if (!resp.ok) {
       return res
         .status(resp.status)
