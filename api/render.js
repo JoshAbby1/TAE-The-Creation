@@ -8,6 +8,61 @@ const SIZE = {
   "4:5":  [1080, 1350],
 };
 
+async function pollinations(prompt, width, height) {
+  const url =
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
+    `?nologo=true&model=flux&width=${width}&height=${height}`;
+  const ok = await fetch(url);
+  if (!ok.ok) throw new Error("Pollinations error");
+  return { imageUrl: url, provider: "pollinations" };
+}
+
+async function falFluxPro({ prompt, b64, ratio }) {
+  const res = await fetch("https://fal.run/fal-ai/flux-pro", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Key ${process.env.FAL_KEY}`,
+    },
+    body: JSON.stringify({
+      input: {
+        prompt,
+        // image-to-image path:
+        image_url: `data:image/*;base64,${b64}`,
+        strength: 0.35,
+        aspect_ratio: ratio,      // "9:16"
+        output_format: "url",
+        guidance_scale: 3.5,
+        num_inference_steps: 28,
+      },
+    }),
+  });
+  return res;
+}
+
+async function falSDXL({ prompt, b64, width, height, strength }) {
+  const res = await fetch("https://fal.run/fal-ai/sdxl-image-to-image", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Key ${process.env.FAL_KEY}`,
+    },
+    body: JSON.stringify({
+      prompt,
+      image: `data:image/*;base64,${b64}`,
+      width,
+      height,
+      strength,
+      guidance_scale: 7,
+      scheduler: "euler",
+      seed: Math.floor(Math.random() * 1e9),
+      negative_prompt:
+        "cartoon, cgi, plastic skin, deformed hands, extra fingers, blurry, low quality",
+    }),
+  });
+  return res;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -23,65 +78,68 @@ export default async function handler(req, res) {
     } = req.body || {};
 
     if (!prompt) return res.status(400).json({ error: "Missing prompt" });
-
     const [width, height] = SIZE[ratio] || [1080, 1920];
 
-    // ---------- TEXT ➜ IMAGE (no upload) ----------
+    // ---------- TEXT ➜ IMAGE ----------
     if (!imageBase64) {
-      // Pollinations: force exact 9:16 using width & height
-      const pollUrl =
-        `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
-        `?nologo=true&model=flux&width=${width}&height=${height}`;
-
-      // quick probe to make sure URL is good
-      const ok = await fetch(pollUrl);
-      if (!ok.ok) return res.status(502).json({ error: "Pollinations error" });
-
-      return res.status(200).json({ imageUrl: pollUrl, provider: "pollinations" });
+      const out = await pollinations(prompt, width, height);
+      return res.status(200).json(out);
     }
 
-    // ---------- IMAGE ➜ IMAGE (with upload) ----------
+    // ---------- IMAGE ➜ IMAGE ----------
     if (!process.env.FAL_KEY) {
-      return res.status(401).json({ error: "FAL_KEY missing on server" });
+      return res.status(401).json({
+        error: "fal.ai authentication error",
+        details: "FAL_KEY is missing on the server (Vercel → Settings → Environment Variables).",
+      });
+    }
+    if (imageBase64.length < 10000) {
+      return res.status(400).json({
+        error: "Upload error",
+        details: "Reference image data looks too small. Try another photo or re-upload.",
+      });
     }
 
-    const resp = await fetch("https://fal.run/fal-ai/sdxl-image-to-image", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Key ${process.env.FAL_KEY}`,
-      },
-      body: JSON.stringify({
+    // Try Fal flux-pro (preferred)
+    let resp = await falFluxPro({ prompt, b64: imageBase64, ratio });
+    if (!resp.ok) {
+      const t = (await resp.text()).slice(0, 600);
+      // auth issues: show clearly
+      if (resp.status === 401 || resp.status === 403) {
+        return res.status(resp.status).json({
+          error: "fal.ai authentication error",
+          details: t.replace(/\s+/g, " "),
+        });
+      }
+      // Fallback to SDXL image-to-image
+      resp = await falSDXL({
         prompt,
-        image: `data:image/*;base64,${imageBase64}`,
+        b64: imageBase64,
         width,
         height,
-        // lower = closer to the reference (0.30–0.40 keeps identity well)
         strength: Math.max(0.2, Math.min(0.7, Number(strength) || 0.35)),
-        guidance_scale: 7,
-        scheduler: "euler",
-        seed: Math.floor(Math.random() * 1e9),
-        negative_prompt:
-          "cartoon, cgi, plastic skin, deformed hands, extra fingers, blurry, low quality",
-      }),
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      return res.status(502).json({ error: "fal.ai error", details: text });
+      });
+      if (!resp.ok) {
+        const t2 = (await resp.text()).slice(0, 800);
+        return res.status(502).json({
+          error: "fal.ai error",
+          details: t2.replace(/\s+/g, " "),
+        });
+      }
     }
 
     const out = await resp.json();
-
-    // Handle all known response shapes
     const imageUrl =
-      out.image_url ||
-      out.url ||
-      (Array.isArray(out.images) && out.images[0]?.url) ||
-      (out.image_base64 ? `data:image/webp;base64,${out.image_base64}` : null);
+      out?.image_url ||
+      out?.url ||
+      (Array.isArray(out?.images) && out.images[0]?.url) ||
+      (out?.image_base64 ? `data:image/webp;base64,${out.image_base64}` : null);
 
     if (!imageUrl) {
-      return res.status(502).json({ error: "No image returned from fal.ai", details: out });
+      return res.status(502).json({
+        error: "fal.ai error",
+        details: ("No image in response: " + JSON.stringify(out)).slice(0, 800),
+      });
     }
 
     return res.status(200).json({ imageUrl, provider: "fal.ai" });
