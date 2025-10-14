@@ -13,12 +13,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing prompt" });
     }
 
-    // ✅ Free image generator (Pollinations AI)
+    // ✅ Free image generator (Pollinations AI) — 9:16 ratio
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
       prompt
-  )})?nologo=true&width=1080&height=1920`;
+    )}?nologo=true&width=1080&height=1920&model=flux&seed=42`;
 
-    // Test the URL to confirm it's reachable
     const test = await fetch(imageUrl);
     if (!test.ok) throw new Error("Image generation failed.");
 
