@@ -18,7 +18,7 @@ async function pollinations(prompt, width, height) {
 }
 
 async function falFluxPro_tryA({ prompt, b64, ratio }) {
-  // Most common: payload wrapped in { input: {...} }
+  // Payload wrapped in { input: ... }
   return fetch("https://fal.run/fal-ai/flux-pro", {
     method: "POST",
     headers: {
@@ -29,9 +29,9 @@ async function falFluxPro_tryA({ prompt, b64, ratio }) {
       input: {
         prompt,
         image_url: `data:image/*;base64,${b64}`,
-        strength: 0.35,          // lower = closer to the uploaded face
-        aspect_ratio: ratio,     // "9:16"
-        output_format: "url",
+        strength: 0.35,           // lower = closer to reference
+        aspect_ratio: ratio,      // "9:16"
+        output_format: "png",     // <-- REQUIRED BY FAL
         guidance_scale: 3.5,
         num_inference_steps: 28,
         seed: Math.floor(Math.random() * 1e9),
@@ -41,7 +41,7 @@ async function falFluxPro_tryA({ prompt, b64, ratio }) {
 }
 
 async function falFluxPro_tryB({ prompt, b64, ratio }) {
-  // Some deployments expect the fields at the top level (no input wrapper)
+  // Fields at top level
   return fetch("https://fal.run/fal-ai/flux-pro", {
     method: "POST",
     headers: {
@@ -53,12 +53,33 @@ async function falFluxPro_tryB({ prompt, b64, ratio }) {
       image_url: `data:image/*;base64,${b64}`,
       strength: 0.35,
       aspect_ratio: ratio,
-      output_format: "url",
+      output_format: "png",       // <-- REQUIRED BY FAL
       guidance_scale: 3.5,
       num_inference_steps: 28,
       seed: Math.floor(Math.random() * 1e9),
     }),
   });
+}
+
+function extractImageUrl(out) {
+  // try URL-like fields
+  let url =
+    out?.image_url ||
+    out?.url ||
+    (Array.isArray(out?.images) && out.images[0]?.url);
+
+  if (url) return url;
+
+  // try base64-like fields and convert to data URL
+  const b64 =
+    out?.image_base64 ||
+    out?.image ||
+    (Array.isArray(out?.images) &&
+      (out.images[0]?.image_base64 ||
+       out.images[0]?.base64 ||
+       out.images[0]?.b64 ||
+       out.images[0]?.content));
+  return b64 ? `data:image/png;base64,${b64}` : null;
 }
 
 export default async function handler(req, res) {
@@ -71,7 +92,7 @@ export default async function handler(req, res) {
     const {
       prompt,
       ratio = "9:16",
-      strength = 0.35,       // slider still sent; we can swap it in if you want
+      strength = 0.35,  // still available if we want to wire it through later
       imageBase64 = "",
     } = req.body || {};
 
@@ -103,14 +124,13 @@ export default async function handler(req, res) {
     let resp = await falFluxPro_tryA({ prompt, b64: imageBase64, ratio });
     if (!resp.ok) {
       const t = (await resp.text()).slice(0, 800);
-      // Auth clarity
       if (resp.status === 401 || resp.status === 403) {
         return res.status(resp.status).json({
           error: "fal.ai authentication error",
           details: t.replace(/\s+/g, " "),
         });
       }
-      // Try payload B (no input wrapper)
+      // Try payload B
       resp = await falFluxPro_tryB({ prompt, b64: imageBase64, ratio });
       if (!resp.ok) {
         const t2 = (await resp.text()).slice(0, 800);
@@ -122,12 +142,7 @@ export default async function handler(req, res) {
     }
 
     const out = await resp.json();
-    const imageUrl =
-      out?.image_url ||
-      out?.url ||
-      (Array.isArray(out?.images) && out.images[0]?.url) ||
-      (out?.image_base64 ? `data:image/webp;base64,${out.image_base64}` : null);
-
+    const imageUrl = extractImageUrl(out);
     if (!imageUrl) {
       return res.status(502).json({
         error: "fal.ai error",
