@@ -5,11 +5,12 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { prompt, provider = "nanobanana", ratio = "9:16", imageBase64 } = req.body || {};
+    const { prompt, provider = "fal-photo", ratio = "9:16", imageBase64 } = req.body || {};
     if (!prompt) return res.status(400).json({ error: "Missing prompt" });
 
-    if (provider === "nanobanana") {
-      const resp = await fetch("https://api.nanobanana.ai/v1/generate", {
+    if (provider === "fal-photo") {
+  // your fal.ai code goes here
+}
         method: "POST",
         headers: {
           "Content-Type": "application/json",
