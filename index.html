@@ -3,78 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TAE Creations – Image</title>
+  <title>TAE Creations – AI Generator</title>
   <style>
     body {
-      background: #0a0a0a;
-      color: white;
+      background: #0b0b0b;
+      color: #fff;
       font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: 100vh;
-      padding: 20px;
+      padding: 30px 20px;
     }
-    textarea, input, button {
-      width: 90%;
-      max-width: 400px;
-      margin: 10px 0;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
+    h1 {
+      margin-bottom: 20px;
+      color: #9cb5ff;
     }
-    textarea { height: 100px; }
+    textarea {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100px;
+      background: #111;
+      color: #fff;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 12px;
+      resize: vertical;
+      font-size: 15px;
+      outline: none;
+    }
     button {
-      background: #4a5cff;
-      color: white;
+      width: 100%;
+      max-width: 420px;
+      background: #5865f2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      margin-top: 14px;
     }
-    img {
+    button:hover {
+      background: #4752c4;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #aaa;
+    }
+    #result img {
       margin-top: 20px;
-      width: 90%;
-      max-width: 400px;
+      max-width: 100%;
       border-radius: 10px;
-      display: none;
+      border: 1px solid #333;
     }
   </style>
 </head>
 <body>
-  <h1>TAE Creations – Image</h1>
-  <textarea id="prompt" placeholder="Describe the image (e.g., 'guy wearing black tracksuit, cinematic lighting')"></textarea>
-  <input type="file" id="photo" accept="image/*" />
+  <h1>TAE Creations – AI Generator</h1>
+
+  <textarea id="prompt" placeholder="Describe your image (e.g., 'guy in black tracksuit, cinematic lighting')"></textarea>
+
   <button id="generate">Generate</button>
   <p id="status"></p>
-  <img id="result" />
+  <div id="result"></div>
 
   <script>
-    document.getElementById("generate").addEventListener("click", async () => {
-      const prompt = document.getElementById("prompt").value;
-      const photo = document.getElementById("photo").files[0];
-      const status = document.getElementById("status");
-      const img = document.getElementById("result");
-      status.textContent = "Generating...";
+    const button = document.getElementById("generate");
+    const promptBox = document.getElementById("prompt");
+    const status = document.getElementById("status");
+    const result = document.getElementById("result");
 
-      const formData = new FormData();
-      formData.append("prompt", prompt);
-      if (photo) formData.append("photo", photo);
+    button.addEventListener("click", async () => {
+      const prompt = promptBox.value.trim();
+      if (!prompt) {
+        status.textContent = "Please enter a prompt first.";
+        return;
+      }
+
+      status.textContent = "Generating your image...";
+      result.innerHTML = "";
+      button.disabled = true;
+      button.textContent = "Generating...";
 
       try {
-        const res = await fetch("/api/render", { method: "POST", body: formData });
-        const data = await res.json();
+        const response = await fetch("/api/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+
+        const data = await response.json();
 
         if (data.image) {
-          img.src = data.image;
-          img.style.display = "block";
-          status.textContent = "";
+          result.innerHTML = `<img src="${data.image}" alt="Generated image">`;
+          status.textContent = "Done!";
         } else {
-          status.textContent = "Error: " + (data.error || "Generation failed");
+          status.textContent = "Error: " + (data.error || "Generation failed.");
         }
-      } catch (err) {
+      } catch (error) {
+        console.error(error);
         status.textContent = "Error connecting to server.";
       }
+
+      button.disabled = false;
+      button.textContent = "Generate";
     });
   </script>
 </body>
