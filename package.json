@@ -1,0 +1,10 @@
+{
+  "name": "tae-the-creations",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "dependencies": {},
+  "scripts": {
+    "start": "node api/image-generate.js"
+  }
+}
