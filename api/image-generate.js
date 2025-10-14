@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     // Use your Hugging Face token from Vercel environment variables
     const HF_TOKEN = process.env.HF_API_KEY;
 
-    const modelUrl = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev";
+    const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2";
 
     const payload = imageBase64
       ? { inputs: prompt || "", image: imageBase64 }
