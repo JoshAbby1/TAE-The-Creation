@@ -1,14 +1,81 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TAE Creations — Image</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAE Creations – Image</title>
   <style>
-    body{margin:0;background:#0b0b0c;color:#eee;font-family:Inter,system-ui,Arial,sans-serif}
-    .wrap{max-width:680px;margin:0 auto;padding:22px}
-    h1{margin:6px 0 18px 0}
-    label{display:block;margin:14px 0 8px;font-weight:600}
-    textarea{width:100%;min-height:140px;padding:12px;border-radius:12px;border:1px solid #2c2c2f;background:#111;color:#eee}
-    input[type=file]{width:100%;padding:10px;border-radius:12px;border:1px solid #2c2c2f;background:#111;color:#bbb}
-    button{width:100%;margin-top:14px;padding:14px;border-radius:12px;border:0;background:#5163ff;color:#fff;font-weight:700;font-size:16px;cursor
+    body {
+      background: #0a0a0a;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    textarea, input, button {
+      width: 90%;
+      max-width: 400px;
+      margin: 10px 0;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    textarea { height: 100px; }
+    button {
+      background: #4a5cff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    img {
+      margin-top: 20px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>TAE Creations – Image</h1>
+  <textarea id="prompt" placeholder="Describe the image (e.g., 'guy wearing black tracksuit, cinematic lighting')"></textarea>
+  <input type="file" id="photo" accept="image/*" />
+  <button id="generate">Generate</button>
+  <p id="status"></p>
+  <img id="result" />
+
+  <script>
+    document.getElementById("generate").addEventListener("click", async () => {
+      const prompt = document.getElementById("prompt").value;
+      const photo = document.getElementById("photo").files[0];
+      const status = document.getElementById("status");
+      const img = document.getElementById("result");
+      status.textContent = "Generating...";
+
+      const formData = new FormData();
+      formData.append("prompt", prompt);
+      if (photo) formData.append("photo", photo);
+
+      try {
+        const res = await fetch("/api/render", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (data.image) {
+          img.src = data.image;
+          img.style.display = "block";
+          status.textContent = "";
+        } else {
+          status.textContent = "Error: " + (data.error || "Generation failed");
+        }
+      } catch (err) {
+        status.textContent = "Error connecting to server.";
+      }
+    });
+  </script>
+</body>
+</html>
