@@ -17,8 +17,9 @@ async function pollinations(prompt, width, height) {
   return { imageUrl: url, provider: "pollinations" };
 }
 
-async function falFluxPro({ prompt, b64, ratio }) {
-  const res = await fetch("https://fal.run/fal-ai/flux-pro", {
+async function falFluxPro_tryA({ prompt, b64, ratio }) {
+  // Most common: payload wrapped in { input: {...} }
+  return fetch("https://fal.run/fal-ai/flux-pro", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -27,21 +28,21 @@ async function falFluxPro({ prompt, b64, ratio }) {
     body: JSON.stringify({
       input: {
         prompt,
-        // image-to-image path:
         image_url: `data:image/*;base64,${b64}`,
-        strength: 0.35,
-        aspect_ratio: ratio,      // "9:16"
+        strength: 0.35,          // lower = closer to the uploaded face
+        aspect_ratio: ratio,     // "9:16"
         output_format: "url",
         guidance_scale: 3.5,
         num_inference_steps: 28,
+        seed: Math.floor(Math.random() * 1e9),
       },
     }),
   });
-  return res;
 }
 
-async function falSDXL({ prompt, b64, width, height, strength }) {
-  const res = await fetch("https://fal.run/fal-ai/sdxl-image-to-image", {
+async function falFluxPro_tryB({ prompt, b64, ratio }) {
+  // Some deployments expect the fields at the top level (no input wrapper)
+  return fetch("https://fal.run/fal-ai/flux-pro", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -49,18 +50,15 @@ async function falSDXL({ prompt, b64, width, height, strength }) {
     },
     body: JSON.stringify({
       prompt,
-      image: `data:image/*;base64,${b64}`,
-      width,
-      height,
-      strength,
-      guidance_scale: 7,
-      scheduler: "euler",
+      image_url: `data:image/*;base64,${b64}`,
+      strength: 0.35,
+      aspect_ratio: ratio,
+      output_format: "url",
+      guidance_scale: 3.5,
+      num_inference_steps: 28,
       seed: Math.floor(Math.random() * 1e9),
-      negative_prompt:
-        "cartoon, cgi, plastic skin, deformed hands, extra fingers, blurry, low quality",
     }),
   });
-  return res;
 }
 
 export default async function handler(req, res) {
@@ -73,11 +71,12 @@ export default async function handler(req, res) {
     const {
       prompt,
       ratio = "9:16",
-      strength = 0.35,
+      strength = 0.35,       // slider still sent; we can swap it in if you want
       imageBase64 = "",
     } = req.body || {};
 
     if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+
     const [width, height] = SIZE[ratio] || [1080, 1920];
 
     // ---------- TEXT ➜ IMAGE ----------
@@ -100,25 +99,19 @@ export default async function handler(req, res) {
       });
     }
 
-    // Try Fal flux-pro (preferred)
-    let resp = await falFluxPro({ prompt, b64: imageBase64, ratio });
+    // Try flux-pro (payload A)
+    let resp = await falFluxPro_tryA({ prompt, b64: imageBase64, ratio });
     if (!resp.ok) {
-      const t = (await resp.text()).slice(0, 600);
-      // auth issues: show clearly
+      const t = (await resp.text()).slice(0, 800);
+      // Auth clarity
       if (resp.status === 401 || resp.status === 403) {
         return res.status(resp.status).json({
           error: "fal.ai authentication error",
           details: t.replace(/\s+/g, " "),
         });
       }
-      // Fallback to SDXL image-to-image
-      resp = await falSDXL({
-        prompt,
-        b64: imageBase64,
-        width,
-        height,
-        strength: Math.max(0.2, Math.min(0.7, Number(strength) || 0.35)),
-      });
+      // Try payload B (no input wrapper)
+      resp = await falFluxPro_tryB({ prompt, b64: imageBase64, ratio });
       if (!resp.ok) {
         const t2 = (await resp.text()).slice(0, 800);
         return res.status(502).json({
