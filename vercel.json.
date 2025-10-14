@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/image/generate", "dest": "/api/image-generate.js" },
+    { "src": "/video/generate", "dest": "/api/video-generate.js" }
+  ]
+}
