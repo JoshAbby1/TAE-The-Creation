@@ -1,6 +1,6 @@
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true, // ✅ Allow normal JSON
   },
 };
 
@@ -10,41 +10,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const buffer = Buffer.concat(chunks);
-    const text = buffer.toString();
+    const { prompt } = req.body;
 
-    const match = text.match(/name="prompt"\r\n\r\n([\s\S]*?)\r\n-/);
-    const prompt = match ? match[1].trim() : "photo realistic portrait";
+    if (!prompt || prompt.trim().length === 0) {
+      return res.status(400).json({ error: "Prompt missing" });
+    }
 
-    // ✅ Uses FAL.ai public endpoint – no key required for light use
-    const falRes = await fetch("https://api.fal.ai/fal-ai/flux-pro", {
+    // ✅ Use Fal.ai (no key required for testing)
+    const falResponse = await fetch("https://fal.run/fal-ai/flux-pro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt,
+        prompt: prompt,
         aspect_ratio: "9:16",
         output_format: "url",
       }),
     });
 
-    if (!falRes.ok) {
-      const text = await falRes.text();
+    if (!falResponse.ok) {
+      const text = await falResponse.text();
       throw new Error("FAL error: " + text);
     }
 
-    const data = await falRes.json();
+    const data = await falResponse.json();
+
     const imageUrl =
       data?.images?.[0]?.url || data?.image_url || data?.url || null;
 
     if (imageUrl) {
-      return res.status(200).json({ image: imageUrl });
+      res.status(200).json({ image: imageUrl });
     } else {
-      return res.status(500).json({ error: "No image URL returned", data });
+      res.status(500).json({ error: "No image URL returned", data });
     }
   } catch (err) {
     console.error("Server error:", err);
-    return res.status(500).json({ error: "Server crashed during generation", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Server crashed during generation", details: err.message });
   }
 }
