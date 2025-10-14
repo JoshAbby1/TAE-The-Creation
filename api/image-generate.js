@@ -3,42 +3,36 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.error('Missing OPENAI_API_KEY in environment');
-    return res.status(500).json({ error: 'Server misconfigured: missing OPENAI_API_KEY' });
-  }
-
   try {
     const { prompt } = req.body || {};
-    if (!prompt) {
-      return res.status(400).json({ error: 'Missing prompt in request body' });
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Missing "prompt" (string) in JSON body.' });
     }
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-image-1',
-        prompt,
-        size: '1024x1024'
-      }),
+    // Build a Pollinations image URL (free, no key). Add seed to avoid caching.
+    const seed = Math.floor(Math.random() * 1e9);
+    const params = new URLSearchParams({
+      model: 'flux',       // or 'sdxl' if you prefer
+      width: '1024',
+      height: '1024',
+      n: '1',
+      seed: String(seed),
     });
 
-    const data = await response.json();
+    const encodedPrompt = encodeURIComponent(prompt.trim());
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`;
 
-    if (!response.ok) {
-      console.error('OpenAI error:', data);
-      return res.status(500).json({ error: 'OpenAI request failed', details: data });
-    }
+    // Optional: lightweight check it responds (don’t download the whole image)
+    // const head = await fetch(imageUrl, { method: 'HEAD' });
+    // if (!head.ok) throw new Error('Image service error');
 
-    const imageUrl = data.data?.[0]?.url;
     return res.status(200).json({ imageUrl });
-  } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  } catch (err) {
+    console.error('image-generate error:', err);
+    // Fallback to a placeholder so your GPT doesn’t break
+    return res.status(200).json({
+      imageUrl: 'https://dummyimage.com/1024x1024/000/fff&text=Generation+failed',
+      error: 'fallback',
+    });
   }
 }
