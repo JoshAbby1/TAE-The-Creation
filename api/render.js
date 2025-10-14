@@ -1,55 +1,42 @@
-// api/render.js — uses fal.ai SDXL image-to-image
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const {
-      prompt,
-      ratio = "9:16",
-      imageBase64 = "",     // base64 of uploaded reference (from the front-end)
-      strength = 0.35       // lower = closer to the reference
-    } = req.body || {};
+    const formData = await new Promise((resolve, reject) => {
+      let body = [];
+      req.on("data", chunk => body.push(chunk));
+      req.on("end", () => resolve(Buffer.concat(body)));
+      req.on("error", err => reject(err));
+    });
 
-    if (!prompt) return res.status(400).json({ error: "Missing prompt" });
-    if (!process.env.FAL_KEY) return res.status(401).json({ error: "FAL_KEY is missing on the server" });
+    // Extract prompt from formData (simple text mode only)
+    const text = formData.toString();
+    const promptMatch = text.match(/name="prompt"\r\n\r\n([^]*)/);
+    const prompt = promptMatch ? promptMatch[1].trim() : "realistic portrait photo";
 
-    const sizeMap = { "9:16":[1080,1920], "16:9":[1920,1080], "1:1":[1024,1024], "3:4":[1024,1365], "4:5":[1080,1350] };
-    const [width, height] = sizeMap[ratio] || [1024,1024];
-
-    const resp = await fetch("https://fal.run/fal-ai/sdxl-image-to-image", {
+    // Call Whisk AI image generation (free, no API key)
+    const whiskURL = "https://api.whisk.ai/image/generate";
+    const whiskRes = await fetch(whiskURL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Key ${process.env.FAL_KEY}`
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt,
-        image: imageBase64 ? `data:image/*;base64,${imageBase64}` : null,
-        width,
-        height,
-        strength,            // 0.3–0.45 sticks close to the ref
-        guidance_scale: 7,
-        scheduler: "euler",
-        seed: Math.floor(Math.random() * 999999),
-        negative_prompt: "cartoon, cgi, plastic skin, deformed hands, extra fingers, blurry, low quality"
+        model: "photo-realistic-v1",
+        prompt: prompt,
+        size: "1080x1920"
       })
     });
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      return res.status(502).json({ error: "fal.ai error", details: text });
+    const data = await whiskRes.json();
+
+    if (data && data.image_url) {
+      res.status(200).json({ image: data.image_url });
+    } else {
+      res.status(500).json({ error: "Image generation failed" });
     }
-
-    const out = await resp.json();
-    const imageUrl = out.image_url || out.url || (out.image_base64 ? `data:image/webp;base64,${out.image_base64}` : null);
-    if (!imageUrl) return res.status(502).json({ error: "No image returned from fal.ai" });
-
-    return res.status(200).json({ imageUrl });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: String(e.message || e) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 }
