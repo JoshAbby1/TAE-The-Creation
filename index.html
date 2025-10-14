@@ -83,12 +83,14 @@
       r.readAsDataURL(f);
     });
 
-    async function fileToDataURL(file){
-      const buf = await file.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      return `data:${file.type};base64,${b64}`;
-    }
-
+    async function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
     goBtn.onclick = async () => {
       try{
         goBtn.disabled = true; msgEl.textContent=''; outEl.style.display='none';
