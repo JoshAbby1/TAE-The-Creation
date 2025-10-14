@@ -6,42 +6,38 @@ export default async function handler(req, res) {
   try {
     const { prompt, imageBase64 } = req.body || {};
     if (!prompt && !imageBase64) {
-      return res.status(400).json({ error: 'Missing prompt or image input' });
+      return res.status(400).json({ error: 'Missing prompt or image data' });
     }
 
-    // Use your Hugging Face token from Vercel environment variables
-    const HF_TOKEN = process.env.HF_API_KEY;
-
+    // ✅ Use the free model
     const modelUrl = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2";
-
-    const payload = imageBase64
-      ? { inputs: prompt || "", image: imageBase64 }
-      : { inputs: prompt || "" };
 
     const response = await fetch(modelUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${HF_TOKEN}`,
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        inputs: imageBase64
+          ? { image: imageBase64, prompt }
+          : prompt,
+      }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("HF error:", err);
+      console.error("Model request failed:", err);
       return res.status(500).json({ error: "Image generation failed" });
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64Image = buffer.toString("base64");
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    const imageUrl = `data:image/png;base64,${base64}`;
 
-    // Return image as base64 markdown (no watermark, realistic)
-    const imageUrl = `data:image/png;base64,${base64Image}`;
     return res.status(200).json({ imageUrl });
   } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("image-generate error:", err);
+    return res.status(500).json({ error: "Image generation failed" });
   }
 }
