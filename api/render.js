@@ -8,6 +8,7 @@ const SIZE = {
   "4:5": [1080, 1350],
 };
 
+// --- Pollinations fallback (text-only) ---
 async function pollinations(prompt, width, height) {
   const url =
     `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
@@ -17,24 +18,27 @@ async function pollinations(prompt, width, height) {
   return { imageUrl: url, provider: "pollinations" };
 }
 
-async function falFluxPro({ prompt, b64, ratio }) {
-  // send FLAT JSON payload (not nested under input)
-  return fetch("https://fal.run/fal-ai/flux-pro", {
+// --- FAL Image-to-Image ---
+async function falImageToImage({ prompt, b64, ratio }) {
+  const endpoint = "https://fal.run/fal-ai/flux-pro"; // or try "flux-pro/v1" if needed
+  const body = {
+    prompt,
+    image_base64: b64,          // ✅ send actual base64 instead of image_url
+    strength: 0.35,
+    aspect_ratio: String(ratio),
+    output_format: "jpeg",      // ✅ required value for Fal
+    guidance_scale: 3.5,
+    num_inference_steps: 28,
+    seed: Math.floor(Math.random() * 1e9),
+  };
+
+  return fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Key ${process.env.FAL_KEY}`,
     },
-    body: JSON.stringify({
-      prompt,
-      image_url: `data:image/jpeg;base64,${b64}`,
-      strength: 0.35,
-      aspect_ratio: String(ratio),
-      output_format: "jpeg", // ✅ flat + correct format
-      guidance_scale: 3.5,
-      num_inference_steps: 28,
-      seed: Math.floor(Math.random() * 1e9),
-    }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -54,6 +58,7 @@ function extractImageUrl(out) {
   return b64 ? `data:image/jpeg;base64,${b64}` : null;
 }
 
+// --- Main handler ---
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -94,7 +99,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const resp = await falFluxPro({ prompt, b64: imageBase64, ratio });
+    const resp = await falImageToImage({ prompt, b64: imageBase64, ratio });
     const text = await resp.text();
 
     if (!resp.ok) {
