@@ -132,7 +132,7 @@
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Generation failed.");
+        if (!res.ok) throw new Error((data.error || "Generation failed.") + (data.details ? " — " + data.details : ""));
 
         resultEl.innerHTML = `<img src="${data.imageUrl}" alt="Generated result">`;
         setStatus("Done ✅");
