@@ -11,37 +11,40 @@ export default async function handler(req, res) {
 
   try {
     const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
+    for await (const chunk of req) chunks.push(chunk);
     const buffer = Buffer.concat(chunks);
     const text = buffer.toString();
 
-    // Extract prompt from the uploaded form data
     const match = text.match(/name="prompt"\r\n\r\n([\s\S]*?)\r\n-/);
-    const prompt = match ? match[1].trim() : "realistic photo portrait";
+    const prompt = match ? match[1].trim() : "photo realistic portrait";
 
-    // ✅ Free photo-real endpoint (Whisk public)
-    const whiskRes = await fetch("https://image.whisklab.ai/generate", {
+    // ✅ Uses FAL.ai public endpoint – no key required for light use
+    const falRes = await fetch("https://api.fal.ai/fal-ai/flux-pro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "photomatch-v2",
         prompt,
         aspect_ratio: "9:16",
-        quality: "high",
+        output_format: "url",
       }),
     });
 
-    const data = await whiskRes.json();
+    if (!falRes.ok) {
+      const text = await falRes.text();
+      throw new Error("FAL error: " + text);
+    }
 
-    if (data && data.image_url) {
-      return res.status(200).json({ image: data.image_url });
+    const data = await falRes.json();
+    const imageUrl =
+      data?.images?.[0]?.url || data?.image_url || data?.url || null;
+
+    if (imageUrl) {
+      return res.status(200).json({ image: imageUrl });
     } else {
-      return res.status(500).json({ error: "Image generation failed", details: data });
+      return res.status(500).json({ error: "No image URL returned", data });
     }
   } catch (err) {
     console.error("Server error:", err);
-    return res.status(500).json({ error: "Server crashed during generation" });
+    return res.status(500).json({ error: "Server crashed during generation", details: err.message });
   }
 }
