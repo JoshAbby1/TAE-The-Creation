@@ -15,45 +15,37 @@ export default async function handler(req, res) {
 
    if (imageBase64) {
   // ---------- IMAGE -> IMAGE (edit) ----------
-  const modelUrl =
-    'https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix';
+  const modelUrl = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix";
+
+  const buffer = toBuffer(imageBase64);
+  const blob = new Blob([buffer], { type: "image/png" });
 
   const fd = new FormData();
+  fd.append("image", blob, "input.png");
 
-  // keep full-quality pixels (don’t downscale to jpg first)
-  fd.append('image', new Blob([toBuffer(imageBase64)], { type: 'image/png' }), 'input.png');
+  // Photorealistic identity-locked prompt
+  const fullPrompt = `${prompt}. keep same person, same face and lighting. ultra realistic photograph, no cartoon, no digital art, no painting.`;
+  fd.append("prompt", fullPrompt);
 
-  // Strong instruction to keep identity + realism
-  const instruction =
-    `${prompt}. keep SAME person, SAME face, SAME pose and lighting. ` +
-    `hyper-realistic photo, natural skin texture, no painting, no cartoon, no anime`;
+  // Tuned settings for realistic look
+  fd.append("strength", "0.15");
+  fd.append("guidance_scale", "7");
+  fd.append("image_guidance_scale", "2.4");
+  fd.append("num_inference_steps", "30");
 
-  fd.append('prompt', instruction);
+  // Keep proportions for 9:16 (portrait)
+  fd.append("width", "1024");
+  fd.append("height", "1820");
 
-  // --- Make it stick to the original face ---
-  // lower = preserves more of the original; start 0.15–0.2
-  fd.append('strength', '0.15');
-
-  // nudge with text, but not too much
-  fd.append('guidance_scale', '7');
-
-  // how strongly to follow the input image (higher = more faithful)
-  fd.append('image_guidance_scale', '2.4');
-
-  // stop stylization & artifacts
+  // Prevent cartoon effects
   fd.append(
-    'negative_prompt',
-    'cartoon, painting, illustration, anime, cgi, 3d render, plastic/waxy skin, over-smooth, watermark, text, logo, extra fingers'
+    "negative_prompt",
+    "cartoon, illustration, painting, 3d render, anime, waxy skin, fake face, overexposed, deformed, logo, watermark, text"
   );
 
-  // --- 9:16 output (portrait). Pick a size that’s not too huge for free tier. ---
-  // 1024x1820 ≈ 9:16 (close enough); you can try 1152x2048 later.
-  fd.append('width', '1024');
-  fd.append('height', '1820');
-
   resp = await fetch(modelUrl, {
-    method: 'POST',
+    method: "POST",
     headers: { Authorization: `Bearer ${process.env.HF_API_KEY}` },
-    body: fd
+    body: fd,
   });
 }
