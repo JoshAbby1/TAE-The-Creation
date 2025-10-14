@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     // ✅ Use the free model
-    const modelUrl = "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE";
+    const modelUrl = "https://api-inference.huggingface.co/models/prompthero/openjourney-v4";
 
     const response = await fetch(modelUrl, {
       method: "POST",
