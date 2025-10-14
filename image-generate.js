@@ -1,129 +1,78 @@
 // /api/image-generate.js
 export default async function handler(req, res) {
-  if (req.method !== "POST")
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const {
-      prompt = "",
-      imageBase64 = "",
-      model = "seedream",
-      params = {},
-    } = req.body || {};
+    const { prompt = '', imageBase64 = '', model = 'seedream4', width = 1080, height = 1920 } = req.body || {};
+    if (!prompt && !imageBase64) {
+      return res.status(400).json({ error: 'Missing prompt or image' });
+    }
 
-    // 9:16 output defaults
-    const width = Number(params.width ?? 768);
-    const height = Number(params.height ?? 1365);
-    const steps = Number(params.num_inference_steps ?? 28);
-    const guidance = Number(params.guidance_scale ?? 4.5);
-    const strength = Number(params.strength ?? 0.65);
-    const negative = params.negative_prompt || "";
+    // Map UI labels -> HF models (no watermark)
+    const MODEL_MAP = {
+      seedream4:  'SG161222/RealVisXL_V5.0',            // photo-realistic SDXL
+      nanobanana: 'stabilityai/sdxl-turbo'              // very fast
+    };
+    const modelId = MODEL_MAP[model] || MODEL_MAP.seedream4;
 
-    // Utility: convert Buffer -> base64 data URL
-    const toDataUrl = (buf, mime = "image/jpeg") =>
-      `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
+    // Helper: turn data URL -> Buffer
+    const dataUrlToBuffer = (dataUrl) => {
+      const b64 = (dataUrl || '').split(',').pop() || '';
+      return Buffer.from(b64, 'base64');
+    };
 
-    // ============================
-    // A) Image → Image (real photo edit)
-    // ============================
+    const HF = 'https://api-inference.huggingface.co/models/';
+    const url = HF + encodeURIComponent(modelId);
+
+    let hfResp;
+
+    // If we have a reference image -> use image-to-image (multipart/form-data)
     if (imageBase64) {
-      const HF_MODEL = "stabilityai/stable-diffusion-2";
-      const endpoint = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+      const fd = new FormData();
+      fd.append('image', new Blob([dataUrlToBuffer(imageBase64)]), 'ref.png');
 
-      // prepare image buffer
-      const b64 = (imageBase64.split(",")[1] || imageBase64).trim();
-      const imgBytes = Buffer.from(b64, "base64");
-
-      // multipart form for Hugging Face
-      const boundary = "----tae" + Math.random().toString(16).slice(2);
-      const dash = `--${boundary}`;
-
-      const parts = [];
-      parts.push(
-        `${dash}\r\nContent-Disposition: form-data; name="image"; filename="input.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`
-      );
-      parts.push(imgBytes);
-      parts.push(`\r\n`);
-
-      const payload = {
+      // SDXL-style conditioning via JSON in 'parameters'
+      fd.append('parameters', new Blob([JSON.stringify({
         prompt,
-        negative_prompt: negative,
-        guidance_scale: guidance,
-        num_inference_steps: steps,
-        strength,
-        width,
-        height,
-      };
-      parts.push(
-        `${dash}\r\nContent-Disposition: form-data; name="parameters"\r\n\r\n`
-      );
-      parts.push(JSON.stringify(payload));
-      parts.push(`\r\n${dash}--\r\n`);
+        width, height,
+        guidance_scale: 3.0,
+        // lower strength keeps more of the original face/identity
+        strength: 0.35
+      })], { type: 'application/json' }));
 
-      const body = Buffer.concat(
-        parts.map((p) => (typeof p === "string" ? Buffer.from(p) : p))
-      );
-
-      const r = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-        },
-        body,
+      hfResp = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.HF_API_KEY}` },
+        body: fd
       });
 
-      if (!r.ok) {
-        const t = await r.text();
-        console.error("HF i2i error:", t);
-        return res.status(500).json({
-          error: "Image generation failed",
-          details: "HuggingFace image2image",
-        });
-      }
-
-      const buf = Buffer.from(await r.arrayBuffer());
-      return res
-        .status(200)
-        .json({ imageUrl: toDataUrl(buf, r.headers.get("content-type")) });
+    } else {
+      // Text-to-image path
+      hfResp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'image/png'
+        },
+        body: JSON.stringify({ inputs: prompt, parameters: { width, height } })
+      });
     }
 
-    // ============================
-    // B) Text → Image (Seedream / Nano Banana)
-    // ============================
-    const base = "https://image.pollinations.ai/prompt/";
-    const chosenModel =
-      model === "banana" ? "nano-banana" : "seedream-4.0";
-
-    const q = new URLSearchParams({
-      model: chosenModel,
-      width: String(width),
-      height: String(height),
-      steps: String(steps),
-      g: String(guidance),
-      enhance: "true",
-    });
-
-    const finalPrompt = negative
-      ? `${prompt}, negative prompt: ${negative}`
-      : prompt;
-
-    const url = `${base}${encodeURIComponent(finalPrompt)}?${q.toString()}`;
-    const out = await fetch(url);
-
-    if (!out.ok) {
-      const t = await out.text();
-      console.error("Pollinations error:", t);
-      return res.status(500).json({ error: "Image generation failed" });
+    if (!hfResp.ok) {
+      const errText = await hfResp.text();
+      console.error('HF error:', errText);
+      return res.status(500).json({ error: 'Generation failed', details: errText.slice(0, 300) });
     }
 
-    // Convert to base64 to avoid any watermark/branding in URL
-    const buf = Buffer.from(await out.arrayBuffer());
-    return res.status(200).json({
-      imageUrl: toDataUrl(buf, out.headers.get("content-type")),
-    });
-  } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    const buf = Buffer.from(await hfResp.arrayBuffer());
+    const imageUrl = `data:image/png;base64,${buf.toString('base64')}`;
+    return res.status(200).json({ imageUrl });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Internal error' });
   }
 }
