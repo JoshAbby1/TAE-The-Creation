@@ -1,273 +1,182 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#A8B48F" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <title>TAE Creations — AI Generator</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TAE — Scene Builder</title>
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#A8B48F" />
 
-  <style>
-  :root{
-    --bg:#A8B48F;    /* sage green */
-    --panel:#B7C19C; /* lighter sage */
-    --text:#3B2E2A;  /* dark brown */
-    --muted:#5A4A44; /* medium brown */
-    --brand:#3B2E2A; /* button colour */
-  }
-
-  html, body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: system-ui, Arial, sans-serif;
-    margin: 0; padding: 0; height: 100%; width: 100%;
-    display: flex; justify-content: center; align-items: flex-start;
-    overflow-x: hidden;
-  }
-
-  /* portrait width, centered */
-  .wrap { width:100%; max-width:420px; padding:24px; box-sizing:border-box; }
-  h1 { margin:0 0 16px; color:var(--text); text-align:center; line-height:1.2; }
-  .intro { margin:10px 0 18px; color:var(--muted); font-size:14px; }
-
-  .card {
-    background:var(--panel);
-    border:1px solid rgba(59,46,42,.25);
-    border-radius:14px;
-    padding:16px;
-    margin:12px 0;
-  }
-
-  .card h2 { margin:0 0 8px; font-size:16px; }
-  .card p  { margin:6px 0 0; font-size:14px; }
-
-  textarea,
-  input[type="file"],
-  select {
-    width:100%;
-    background:rgba(255,255,255,.45);
-    color:var(--text);
-    border:1px solid rgba(59,46,42,.25);
-    border-radius:10px;
-    padding:10px;
-    font-size:15px;
-    box-sizing:border-box;
-  }
-  textarea { min-height:120px; }
-
-  .checks{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .checks label{
-    display:inline-flex; align-items:center; justify-content:center;
-    padding:8px 12px; border:1px solid rgba(59,46,42,.25);
-    border-radius:10px; background:rgba(255,255,255,.45);
-    color:var(--text); cursor:pointer; user-select:none; font-size:14px;
-  }
-  .checks input{ display:none; }
-  .checks input:checked + span{ border-bottom:2px solid var(--text); font-weight:600; }
-
-  button{
-    width:100%; background:var(--brand); color:#F3EFED;
-    border:0; border-radius:12px; padding:14px; font-weight:700; cursor:pointer; font-size:16px; margin-top:10px; box-sizing:border-box;
-  }
-  button[disabled]{ opacity:.6; cursor:not-allowed; }
-
-  .muted{ color:var(--muted); font-size:13px; margin-top:4px; }
-  #status{ margin-top:10px; color:var(--muted); }
-  #error{ margin-top:10px; color:#8B2E2E; font-weight:600; }
-
-  #result img{
-    max-width:100%; border-radius:12px;
-    border:1px solid rgba(59,46,42,.25); margin-top:12px; display:block;
-  }
-
-  @media (orientation: landscape){ body{ align-items:center; } }
-  </style>
+<style>
+:root{
+  --bg:#A8B48F;     /* sage green */
+  --panel:#B7C19C;  /* lighter sage */
+  --text:#3B2E2A;   /* dark brown */
+  --muted:#5A4A44;  /* medium brown */
+  --btn:#3B2E2A;    /* button */
+  --btnText:#F3EFED;
+}
+html,body{background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100%;overflow-x:hidden}
+.wrap{width:100%;max-width:420px;padding:24px;box-sizing:border-box}
+h1{margin:0 0 12px;text-align:center}
+.intro{color:var(--muted);font-size:14px;margin:6px 0 16px;text-align:center}
+.card{background:var(--panel);border:1px solid rgba(59,46,42,.25);border-radius:14px;padding:14px;margin:12px 0}
+.card h2{margin:0 0 8px;font-size:16px}
+label{font-weight:600;margin:6px 0 6px;display:block}
+input[type="text"], textarea{
+  width:100%;background:rgba(255,255,255,.45);color:var(--text);
+  border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:10px;box-sizing:border-box;font-size:15px
+}
+textarea{min-height:80px;resize:vertical}
+.smallrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+select{flex:1 1 46%;background:rgba(255,255,255,.45);border:1px solid rgba(59,46,42,.25);border-radius:10px;color:var(--text);padding:10px}
+button{width:100%;background:var(--btn);color:var(--btnText);border:0;border-radius:12px;padding:14px;font-weight:700;font-size:16px;cursor:pointer;margin-top:10px}
+button[disabled]{opacity:.6;cursor:not-allowed}
+.muted{color:var(--muted);font-size:13px;margin-top:6px}
+#status{color:var(--muted);margin-top:8px}
+#promptBox{
+  background:rgba(255,255,255,.55);border:1px dashed rgba(59,46,42,.35);
+  border-radius:12px;padding:12px;white-space:pre-wrap;font-size:13px;color:var(--text)
+}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.actions button{flex:1}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2f2a27;color:#fff;padding:10px 14px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+@media (orientation:landscape){body{align-items:center}}
+</style>
 </head>
 
 <body>
   <div class="wrap">
     <h1>🎨 TAE Image Creator</h1>
-    <p class="intro">
-      You make cinematic, realistic AI images using <b>Nano Banana (Gemini 2.5 Flash)</b>.<br>
-      When the user fills in the form below, generate one clean image (9:16 by default). If they upload a photo, treat it as an edit — preserve identity and lighting unless told otherwise.
-    </p>
+    <p class="intro">Type your scene, outfit, and action. We’ll build the perfect TAE prompt, then you’ll open Gemini and paste it to generate.</p>
 
     <div class="card">
-      <h2>🖼️ Step 1: Upload an image (optional)</h2>
-      <p>Used for edits. Skip if starting fresh.</p>
-      <input type="file" id="imageUpload" accept="image/*">
-    </div>
+      <h2>🧩 Fill these</h2>
+      <label>What scene do you want?</label>
+      <textarea id="scene" placeholder="e.g., night-time city rooftop with neon signs, slight mist, a Cane Corso nearby"></textarea>
 
-    <div class="card">
-      <h2>✏️ Step 2: Describe what you want</h2>
-      <textarea id="prompt" placeholder="Example: A chill guy wearing a grey North Face hoodie holding a Cane Corso puppy under soft LED lighting."></textarea>
-    </div>
+      <label style="margin-top:10px;">What outfit?</label>
+      <textarea id="outfit" placeholder="e.g., grey North Face hoodie, black cargos, clean trainers"></textarea>
 
-    <div class="card">
-      <h2>📸 Step 3: Choose your camera vibe</h2>
-      <div class="checks" id="cameraChecks">
-        <label><input type="checkbox"><span>Close-up portrait</span></label>
-        <label><input type="checkbox"><span>Waist-up shot</span></label>
-        <label><input type="checkbox"><span>Full body</span></label>
-        <label><input type="checkbox"><span>Side profile</span></label>
+      <label style="margin-top:10px;">What are they doing?</label>
+      <textarea id="action" placeholder="e.g., leaning on the railing, holding the puppy, looking calm to camera"></textarea>
+
+      <!-- Optional quick refiners so users don't have to retype -->
+      <div class="smallrow">
+        <select id="camera">
+          <option value="waist-up, 85mm lens, eye-level">Camera: waist-up, 85mm, eye-level</option>
+          <option value="close-up portrait, 85mm lens, shallow depth of field">Camera: close-up, 85mm, shallow DoF</option>
+          <option value="full body, slight low angle, 50mm lens">Camera: full body, 50mm, slight low angle</option>
+        </select>
+        <select id="lighting">
+          <option value="cinematic LED glow with soft shadow">Lighting: cinematic LED glow</option>
+          <option value="natural daylight, soft bounce">Lighting: natural daylight</option>
+          <option value="warm indoor tone, soft shadow">Lighting: warm indoor</option>
+          <option value="moody shadows, rim light on subject">Lighting: moody / rim light</option>
+        </select>
+        <select id="mood">
+          <option value="chill">Mood: chill</option>
+          <option value="confident">Mood: confident</option>
+          <option value="dreamy">Mood: dreamy</option>
+          <option value="funny">Mood: funny</option>
+          <option value="chaotic">Mood: chaotic</option>
+        </select>
+        <select id="ratio">
+          <option value="9:16" selected>Ratio: 9:16 (portrait)</option>
+          <option value="1:1">Ratio: 1:1</option>
+          <option value="16:9">Ratio: 16:9</option>
+        </select>
       </div>
+
+      <button id="generate">Generate prompt</button>
+      <div id="status" class="muted"></div>
     </div>
 
-    <div class="card">
-      <h2>💡 Step 4: Lighting style</h2>
-      <div class="checks" id="lightChecks">
-        <label><input type="checkbox"><span>Natural daylight</span></label>
-        <label><input type="checkbox"><span>Cinematic LED glow</span></label>
-        <label><input type="checkbox"><span>Warm indoor tone</span></label>
-        <label><input type="checkbox"><span>Moody / shadowy</span></label>
+    <div class="card" id="promptCard" style="display:none;">
+      <h2>🧠 TAE Prompt</h2>
+      <div id="promptBox">…</div>
+      <div class="actions">
+        <button id="copyBtn">Copy</button>
+        <button id="openGemini">Create image (opens Gemini)</button>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>🌈 Step 5: Mood & energy</h2>
-      <div class="checks" id="moodChecks">
-        <label><input type="checkbox"><span>Chill</span></label>
-        <label><input type="checkbox"><span>Confident</span></label>
-        <label><input type="checkbox"><span>Funny</span></label>
-        <label><input type="checkbox"><span>Dreamy</span></label>
-        <label><input type="checkbox"><span>Chaotic</span></label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>⚙️ Step 6: Ratio (pick one)</h2>
-      <div class="checks" id="ratioChecks">
-        <label><input type="radio" name="ratio" checked><span>9:16 Portrait (default)</span></label>
-        <label><input type="radio" name="ratio"><span>1:1 Square</span></label>
-        <label><input type="radio" name="ratio"><span>16:9 Landscape</span></label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>🐶 Step 7: Add-ons</h2>
-      <div class="checks" id="addonChecks">
-        <label><input type="checkbox"><span>Include animals</span></label>
-        <label><input type="checkbox"><span>Add props</span></label>
-        <label><input type="checkbox"><span>Add neon effects</span></label>
-        <label><input type="checkbox"><span>Y2K styling</span></label>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>🧠 Rules</h2>
-      <ul>
-        <li>No text, no logos, no watermarks.</li>
-        <li>Keep everything realistic and cinematic.</li>
-        <li>If multiple boxes are ticked, blend them logically.</li>
-        <li>Output only the image + one-line caption like “Cinematic chill with Cane Corso.”</li>
-      </ul>
-    </div>
-
-    <button id="generateBtn">Generate (9:16)</button>
-    <div id="status" class="muted"></div>
-    <div id="error"></div>
-    <div id="result"></div>
-
-    <!-- Gemini panel (appears after copying prompt) -->
-    <div id="geminiPanel" style="display:none; margin-top:12px;">
-      <p class="muted">Prompt copied. Open your Gemini and paste to get the best quality.</p>
-      <button id="openGeminiBtn" style="width:100%; background:#3B2E2A; color:#F3EFED; border:0; border-radius:12px; padding:14px; font-weight:700; cursor:pointer; font-size:16px;">
-        ✨ Launch in Gemini
-      </button>
+      <p class="muted">In Gemini: paste this prompt. If you have a reference photo, attach it and hit Send.</p>
     </div>
   </div>
 
-  <script>
-  /** Your shared Gemini link (free) */
-  const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
+  <div id="toast" class="toast">Copied</div>
 
-  /* helpers */
-  function readChecked(selector) {
-    return [...document.querySelectorAll(selector)]
-      .filter(el => el.checked)
-      .map(el => el.nextElementSibling?.textContent?.trim())
-      .filter(Boolean);
+<script>
+const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
+
+/* Build prompt in your TAE layout (Style Guide) */
+function buildTAEPrompt(){
+  const scene  = document.getElementById('scene').value.trim();
+  const outfit = document.getElementById('outfit').value.trim();
+  const action = document.getElementById('action').value.trim();
+  const camera = document.getElementById('camera').value;
+  const lighting = document.getElementById('lighting').value;
+  const mood = document.getElementById('mood').value;
+  const ratio = document.getElementById('ratio').value;
+
+  // Format to your Style Guide sections: Outfit / Scene / Background / Camera / Lighting / Mood / Negatives
+  // Defaults: realistic, cinematic, 9:16, no text/watermarks.  [oai_citation:0‡TAE_Prompt_Style_Guide.txt.txt](sediment://file_00000000d5a8622f8938d29475406e69)
+  const background = scene || "studio set or urban backdrop with subtle depth";
+  const outfitLine = outfit || "clean, neutral streetwear";
+  const sceneLine  = scene || "simple, cinematic scene";
+  const actionLine = action ? `Action: ${action}` : null;
+
+  const blocks = [
+    `Ratio: ${ratio} (portrait default). Realistic human look, cinematic tone, sharp detail. No text. No watermarks.`,
+    `Outfit: ${outfitLine}`,
+    `Scene: ${sceneLine}`,
+    `Background: ${background}`,
+    `Camera: ${camera}`,
+    `Lighting: ${lighting}`,
+    `Mood: ${mood}`,
+    (actionLine || undefined),
+    `Negative Prompts: cartoonish, distorted, blurry, deformed hands, duplicated face`
+  ].filter(Boolean);
+
+  return blocks.join("\n");
+}
+
+/* UI helpers */
+function showToast(msg="Copied"){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1200);
+}
+
+/* Events */
+document.getElementById('generate').addEventListener('click', async ()=>{
+  const s = document.getElementById('scene').value.trim();
+  const o = document.getElementById('outfit').value.trim();
+  const a = document.getElementById('action').value.trim();
+
+  if(!s && !o && !a){
+    document.getElementById('status').textContent = "Add at least one detail (scene, outfit, or action).";
+    return;
   }
-  function getRatio() {
-    const lbl = document.querySelector('#ratioChecks input[name="ratio"]:checked')?.nextElementSibling?.textContent || "9:16 Portrait (default)";
-    if (lbl.includes("1:1")) return "1:1";
-    if (lbl.includes("16:9")) return "16:9";
-    return "9:16";
-  }
-  function buildPrompt() {
-    const base = (document.getElementById("prompt")?.value || "").trim();
-    const camera   = readChecked('#cameraChecks input');
-    const lighting = readChecked('#lightChecks input');
-    const mood     = readChecked('#moodChecks input');
-    const addons   = readChecked('#addonChecks input');
-    const ratio    = getRatio();
+  document.getElementById('status').textContent = "Creating TAE prompt…";
 
-    const lines = [];
-    if (base) lines.push(base);
-    if (camera.length)   lines.push(`Camera vibe: ${camera.join(", ")}`);
-    if (lighting.length) lines.push(`Lighting: ${lighting.join(", ")}`);
-    if (mood.length)     lines.push(`Mood: ${mood.join(", ")}`);
-    if (addons.length)   lines.push(`Add-ons: ${addons.join(", ")}`);
-    lines.push(`Aspect ratio: ${ratio}`);
-    lines.push("Style: cinematic, realistic, natural skin texture, no text, no logos, no watermark.");
-    return lines.join("\n");
-  }
-  function showStatus(msg, isError=false) {
-    const ok = document.getElementById("status");
-    const er = document.getElementById("error");
-    if (isError) { if (er) er.textContent = msg; if (ok) ok.textContent = ""; }
-    else { if (ok) ok.textContent = msg; if (er) er.textContent = ""; }
-  }
+  const prompt = buildTAEPrompt();
+  document.getElementById('promptBox').textContent = prompt;
+  document.getElementById('promptCard').style.display = "block";
+  document.getElementById('status').textContent = "Ready.";
+});
 
-  /* Main click handler (free Gemini flow) */
-  document.getElementById("generateBtn")?.addEventListener("click", async () => {
-    const btn = document.getElementById("generateBtn");
-    const gemPanel = document.getElementById("geminiPanel");
-    const openBtn = document.getElementById("openGeminiBtn");
-    const userPrompt = buildPrompt();
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const txt = document.getElementById('promptBox').textContent;
+  if (!txt) return;
+  try { await navigator.clipboard.writeText(txt); showToast("Prompt copied"); } catch {}
+});
 
-    if (!userPrompt) {
-      showStatus("Please write a prompt first.", true);
-      return;
-    }
-
-    btn.disabled = true;
-    showStatus("Preparing your Gemini prompt…");
-
-    // Full instruction for Gemini
-    const finalPrompt =
-`You are TAE Image Creator.
-
-Generate ONE cinematic, realistic image using Nano Banana (Gemini 2.5 Flash).
-If a photo was uploaded, treat this as an edit — preserve identity and lighting unless told otherwise.
-
-Reply ONLY with the generated image and a short title (max 5 words). No extra chat.
-
-User request:
-${userPrompt}
-
-Rules:
-- No text, no logos, no watermarks.
-- Keep it realistic and cinematic.
-- If multiple options were ticked, blend them logically.`;
-
-    try {
-      await navigator.clipboard.writeText(finalPrompt);
-      showStatus("Prompt copied — tap ‘Launch in Gemini’ below and paste.", false);
-      gemPanel.style.display = "block";
-      // open Gemini in the same tab when user clicks
-      openBtn.onclick = () => { window.location.href = GEMINI_LINK; };
-    } catch (e) {
-      showStatus("Couldn't copy automatically. Open Gemini and paste manually.", true);
-      gemPanel.style.display = "block";
-      openBtn.onclick = () => { window.location.href = GEMINI_LINK; };
-    } finally {
-      btn.disabled = false;
-    }
-  });
-  </script>
+document.getElementById('openGemini').addEventListener('click', ()=>{
+  // same tab, so it feels integrated
+  window.location.href = GEMINI_LINK;
+});
+</script>
 </body>
 </html>
