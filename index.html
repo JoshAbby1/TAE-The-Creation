@@ -51,6 +51,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
     <h1>🎨 TAE Image Creator</h1>
     <p class="intro">Type your scene, outfit, and action. We’ll build the perfect TAE prompt, then you’ll open Gemini, upload your photo, press the filter button, then “create image” and paste it to generate.</p>
 
+    <!-- Builder -->
     <div class="card">
       <h2>🧩 Fill these</h2>
       <label>What scene do you want?</label>
@@ -92,6 +93,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       <div id="status" class="muted"></div>
     </div>
 
+    <!-- Generated Prompt -->
     <div class="card" id="promptCard" style="display:none;">
       <h2>🧠 TAE Prompt</h2>
       <div id="promptBox">…</div>
@@ -101,6 +103,13 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       </div>
       <p class="muted">In Gemini: paste this prompt. If you have a reference photo, attach it and hit Send.</p>
     </div>
+
+    <!-- Already have prompt -->
+    <div class="card">
+      <h2>⚡ Already have your prompt?</h2>
+      <p class="muted">If you already have your prompt, press below — upload, filter, create photo, upload your photo and paste your prompt!</p>
+      <button id="readyGemini">I’m ready — open Gemini</button>
+    </div>
   </div>
 
   <div id="toast" class="toast">Copied</div>
@@ -108,7 +117,6 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <script>
 const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
 
-/* Build prompt in your TAE layout */
 function buildTAEPrompt(){
   const scene  = document.getElementById('scene').value.trim();
   const outfit = document.getElementById('outfit').value.trim();
@@ -138,41 +146,36 @@ function buildTAEPrompt(){
   return blocks.join("\n");
 }
 
-/* UI helpers */
 function showToast(msg="Copied"){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
+  const t=document.getElementById('toast');
+  t.textContent=msg;
   t.classList.add('show');
-  setTimeout(()=> t.classList.remove('show'), 1200);
+  setTimeout(()=>t.classList.remove('show'),1200);
 }
 
-/* Events */
-document.getElementById('generate').addEventListener('click', async ()=>{
-  const s = document.getElementById('scene').value.trim();
-  const o = document.getElementById('outfit').value.trim();
-  const a = document.getElementById('action').value.trim();
+document.getElementById('generate').addEventListener('click', ()=>{
+  const s=document.getElementById('scene').value.trim();
+  const o=document.getElementById('outfit').value.trim();
+  const a=document.getElementById('action').value.trim();
 
-  if(!s && !o && !a){
-    document.getElementById('status').textContent = "Add at least one detail (scene, outfit, or action).";
+  if(!s&&!o&&!a){
+    document.getElementById('status').textContent="Add at least one detail (scene, outfit, or action).";
     return;
   }
-  document.getElementById('status').textContent = "Creating TAE prompt…";
-
-  const prompt = buildTAEPrompt();
-  document.getElementById('promptBox').textContent = prompt;
-  document.getElementById('promptCard').style.display = "block";
-  document.getElementById('status').textContent = "Ready.";
+  document.getElementById('status').textContent="Creating TAE prompt…";
+  const prompt=buildTAEPrompt();
+  document.getElementById('promptBox').textContent=prompt;
+  document.getElementById('promptCard').style.display="block";
+  document.getElementById('status').textContent="Ready.";
 });
 
-document.getElementById('copyBtn').addEventListener('click', async ()=>{
-  const txt = document.getElementById('promptBox').textContent;
-  if (!txt) return;
-  try { await navigator.clipboard.writeText(txt); showToast("Prompt copied"); } catch {}
+document.getElementById('copyBtn').addEventListener('click', async()=>{
+  const txt=document.getElementById('promptBox').textContent;
+  if(!txt)return;
+  try{await navigator.clipboard.writeText(txt);showToast("Prompt copied");}catch{}
 });
-
-document.getElementById('openGemini').addEventListener('click', ()=>{
-  window.location.href = GEMINI_LINK;
-});
+document.getElementById('openGemini').addEventListener('click',()=>{window.location.href=GEMINI_LINK;});
+document.getElementById('readyGemini').addEventListener('click',()=>{window.location.href=GEMINI_LINK;});
 </script>
 </body>
 </html>
