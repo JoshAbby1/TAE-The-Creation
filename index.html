@@ -68,93 +68,88 @@ button[disabled]{ opacity:.6; cursor:not-allowed; }
 </style>
 </head>
 <body>
-  <h1>TAE Creations – AI Generator</h1>
+  <div class="wrap">
+    <h1>🎨 TAE Image Creator</h1>
+    <p class="intro">
+      You make cinematic, realistic AI images using <strong>Nano Banana (Gemini 2.5 Flash)</strong>.<br><br>
+      When the user fills in the form below, generate one clean image (9:16 by default).<br>
+      If they upload a photo, treat it as an edit — preserve identity and lighting unless told otherwise.
+    </p>
 
-  <!-- Prompt input -->
-  <label for="prompt">Prompt</label>
-  <textarea id="prompt" placeholder="Describe what you want (e.g., 'man wearing black tracksuit, cinematic lighting, ultra-realistic, 85mm lens')"></textarea>
+    <div class="card">
+      <h2>🖼️ Step 1: Upload an image (optional)</h2>
+      <p>Used for edits. Skip if starting fresh.</p>
+      <input type="file" id="imageUpload" accept="image/*">
+    </div>
 
-  <!-- Upload photo input -->
-  <label for="photo">Upload reference photo (optional)</label>
-  <input id="photo" type="file" accept="image/*" />
+    <div class="card">
+      <h2>✏️ Step 2: Describe what you want</h2>
+      <textarea id="prompt" placeholder="Example: A chill guy wearing a grey North Face hoodie holding a Cane Corso puppy under soft LED lighting."></textarea>
+    </div>
 
-  <div class="hint">
-    Upload a photo if you want the AI to keep your appearance —  
-    or leave it blank to generate a new realistic image from your prompt.<br><br>
-    <strong>Both come out watermark-free.</strong>
+    <div class="card">
+      <h2>📸 Step 3: Choose your camera vibe</h2>
+      <div class="checks">
+        <label><input type="checkbox"><span>Close-up portrait</span></label>
+        <label><input type="checkbox"><span>Waist-up shot</span></label>
+        <label><input type="checkbox"><span>Full body</span></label>
+        <label><input type="checkbox"><span>Side profile</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💡 Step 4: Lighting style</h2>
+      <div class="checks">
+        <label><input type="checkbox"><span>Natural daylight</span></label>
+        <label><input type="checkbox"><span>Cinematic LED glow</span></label>
+        <label><input type="checkbox"><span>Warm indoor tone</span></label>
+        <label><input type="checkbox"><span>Moody / shadowy</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🌈 Step 5: Mood & energy</h2>
+      <div class="checks">
+        <label><input type="checkbox"><span>Chill</span></label>
+        <label><input type="checkbox"><span>Confident</span></label>
+        <label><input type="checkbox"><span>Funny</span></label>
+        <label><input type="checkbox"><span>Dreamy</span></label>
+        <label><input type="checkbox"><span>Chaotic</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Step 6: Ratio (pick one)</h2>
+      <div class="checks">
+        <label><input type="radio" name="ratio" checked><span>9:16 Portrait (default)</span></label>
+        <label><input type="radio" name="ratio"><span>1:1 Square</span></label>
+        <label><input type="radio" name="ratio"><span>16:9 Landscape</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🐶 Step 7: Add-ons</h2>
+      <div class="checks">
+        <label><input type="checkbox"><span>Include animals</span></label>
+        <label><input type="checkbox"><span>Add props</span></label>
+        <label><input type="checkbox"><span>Add neon effects</span></label>
+        <label><input type="checkbox"><span>Y2K styling</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧠 Rules</h2>
+      <ul>
+        <li>No text, no logos, no watermarks.</li>
+        <li>Keep everything realistic and cinematic.</li>
+        <li>If multiple boxes are ticked, blend them logically.</li>
+        <li>Output only the image + one-line caption like “Cinematic chill with Cane Corso.”</li>
+      </ul>
+    </div>
+
+    <button id="generateBtn">Generate (9:16)</button>
+    <div id="status"></div>
+    <div id="result"></div>
   </div>
-
-  <!-- Strength slider -->
-  <div class="range">
-    <span>Match</span>
-    <input id="strength" type="range" min="0.20" max="0.70" step="0.05" value="0.35" />
-    <span>Style</span>
-  </div>
-  <div class="hint">Lower = closer to uploaded photo. Try 0.30–0.40 for best likeness.</div>
-
-  <!-- Generate button -->
-  <button id="generate">Generate (9:16)</button>
-  <div id="status"></div>
-  <div id="result"></div>
-
-  <script>
-    const btn = document.getElementById("generate");
-    const statusEl = document.getElementById("status");
-    const resultEl = document.getElementById("result");
-
-    function setStatus(t){ statusEl.textContent = t || ""; }
-
-    // Convert uploaded file to Base64
-    function fileToBase64(file){
-      return new Promise((resolve, reject)=>{
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // Main button click
-    btn.addEventListener("click", async () => {
-      setStatus(""); resultEl.innerHTML = "";
-      const prompt = document.getElementById("prompt").value.trim();
-      const file = document.getElementById("photo").files[0];
-      const strength = Number(document.getElementById("strength").value || 0.35);
-
-      if (!prompt) { setStatus("Please enter a prompt."); return; }
-
-      btn.disabled = true;
-      btn.textContent = "Generating…";
-      setStatus("Working its magic… (20–40s)");
-
-      try {
-        let imageBase64 = "";
-        if (file) imageBase64 = await fileToBase64(file);
-
-        const res = await fetch("/api/render", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            ratio: "9:16",
-            strength,
-            imageBase64
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error((data.error || "Generation failed.") + (data.details ? " — " + data.details : ""));
-
-        resultEl.innerHTML = `<img src="${data.imageUrl}" alt="Generated result">`;
-        setStatus("Done ✅");
-      } catch (err) {
-        console.error(err);
-        setStatus("Error: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Generate (9:16)";
-      }
-    });
-  </script>
 </body>
 </html>
