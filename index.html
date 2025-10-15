@@ -49,7 +49,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <body>
   <div class="wrap">
     <h1>🎨 TAE Image Creator</h1>
-    <p class="intro">Type your scene, outfit, and action. We’ll build the perfect TAE prompt, then you’ll open Gemini and paste it to generate.</p>
+    <p class="intro">Type your scene, outfit, and action. We’ll build the perfect TAE prompt, then you’ll open Gemini, upload your photo, press the filter button, then “create image” and paste it to generate.</p>
 
     <div class="card">
       <h2>🧩 Fill these</h2>
@@ -62,7 +62,6 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       <label style="margin-top:10px;">What are they doing?</label>
       <textarea id="action" placeholder="e.g., leaning on the railing, holding the puppy, looking calm to camera"></textarea>
 
-      <!-- Optional quick refiners so users don't have to retype -->
       <div class="smallrow">
         <select id="camera">
           <option value="waist-up, 85mm lens, eye-level">Camera: waist-up, 85mm, eye-level</option>
@@ -109,7 +108,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <script>
 const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
 
-/* Build prompt in your TAE layout (Style Guide) */
+/* Build prompt in your TAE layout */
 function buildTAEPrompt(){
   const scene  = document.getElementById('scene').value.trim();
   const outfit = document.getElementById('outfit').value.trim();
@@ -119,8 +118,6 @@ function buildTAEPrompt(){
   const mood = document.getElementById('mood').value;
   const ratio = document.getElementById('ratio').value;
 
-  // Format to your Style Guide sections: Outfit / Scene / Background / Camera / Lighting / Mood / Negatives
-  // Defaults: realistic, cinematic, 9:16, no text/watermarks.  [oai_citation:0‡TAE_Prompt_Style_Guide.txt.txt](sediment://file_00000000d5a8622f8938d29475406e69)
   const background = scene || "studio set or urban backdrop with subtle depth";
   const outfitLine = outfit || "clean, neutral streetwear";
   const sceneLine  = scene || "simple, cinematic scene";
@@ -174,7 +171,6 @@ document.getElementById('copyBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('openGemini').addEventListener('click', ()=>{
-  // same tab, so it feels integrated
   window.location.href = GEMINI_LINK;
 });
 </script>
