@@ -4,39 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TAE Creations – AI Generator</title>
- <style>
+<style>
 :root{
-  /* brand colours */
   --bg:      #A8B48F;  /* sage green background */
-  --panel:   #B7C19C;  /* slightly lighter sage for cards */
+  --panel:   #B7C19C;  /* lighter sage for cards */
   --text:    #3B2E2A;  /* dark brown text */
   --muted:   #5A4A44;  /* medium brown for hints */
   --brand:   #3B2E2A;  /* button colour (dark brown) */
 }
 
-/* base layout */
-body {
+/* Lock layout to portrait-style, mobile-first */
+html, body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, Arial, sans-serif;
   margin: 0;
-  padding: 24px;
+  padding: 0;
+  height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
 }
 
+/* Keep all content narrow + centered vertically */
 .wrap {
   width: 100%;
-  max-width: 820px;
+  max-width: 420px;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 h1 {
   margin: 0 0 16px;
   color: var(--text);
   text-align: center;
+  line-height: 1.2;
 }
 
-/* cards and containers */
+/* card sections */
 .card {
   background: var(--panel);
   border: 1px solid rgba(59,46,42,.25);
@@ -45,7 +52,7 @@ h1 {
   margin: 12px 0;
 }
 
-/* form inputs */
+/* inputs */
 textarea,
 input[type="file"],
 select {
@@ -56,6 +63,7 @@ select {
   border-radius: 10px;
   padding: 10px;
   font-size: 15px;
+  box-sizing: border-box;
 }
 
 /* checkbox groups */
@@ -101,6 +109,7 @@ button {
   cursor: pointer;
   font-size: 16px;
   margin-top: 10px;
+  box-sizing: border-box;
 }
 
 button[disabled] {
@@ -108,7 +117,7 @@ button[disabled] {
   cursor: not-allowed;
 }
 
-/* links and mini buttons */
+/* small link button */
 .gem-btn {
   display: inline-block;
   padding: 10px 14px;
@@ -124,7 +133,7 @@ button[disabled] {
   opacity: .9;
 }
 
-/* text hints and messages */
+/* status text */
 .muted {
   color: var(--muted);
   font-size: 13px;
@@ -138,7 +147,7 @@ button[disabled] {
 
 #error {
   margin-top: 8px;
-  color: #8B2E2E; /* dark reddish brown */
+  color: #8B2E2E;
   font-weight: 600;
 }
 
@@ -148,6 +157,13 @@ button[disabled] {
   border: 1px solid rgba(59,46,42,.25);
   margin-top: 10px;
   display: block;
+}
+
+/* prevent landscape scrolling */
+@media (orientation: landscape) {
+  body {
+    align-items: center;
+  }
 }
 </style>
 </head>
