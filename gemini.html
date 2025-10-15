@@ -1,16 +1,319 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Redirecting to TAE Gemini…</title>
-  <meta http-equiv="refresh" content="0; url=https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing">
-  <link rel="canonical" href="https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TAE Creations — AI Generator</title>
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#A8B48F" />
+
   <style>
-    body{background:#A8B48F;color:#3B2E2A;font-family:system-ui, sans-serif;display:grid;place-items:center;height:100vh;margin:0}
-    a{color:#3B2E2A}
+    :root {
+      --bg: #A8B48F;    /* Sage green background */
+      --panel: #B7C19C; /* Light sage panels */
+      --text: #3B2E2A;  /* Dark brown text */
+      --muted: #5A4A44; /* Medium brown text */
+      --button: #3B2E2A; /* Button background */
+      --button-text: #F3EFED; /* Button text */
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100%;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    p.intro {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    textarea, input[type="file"] {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(59, 46, 42, 0.3);
+      border-radius: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .checks label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid rgba(59, 46, 42, 0.3);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.45);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      font-size: 14px;
+    }
+
+    .checks input {
+      display: none;
+    }
+
+    .checks input:checked + span {
+      border-bottom: 2px solid var(--text);
+      font-weight: 600;
+    }
+
+    button {
+      width: 100%;
+      background: var(--button);
+      color: var(--button-text);
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      box-sizing: border-box;
+    }
+
+    button[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    #status {
+      margin-top: 10px;
+      color: var(--muted);
+    }
+
+    #error {
+      margin-top: 10px;
+      color: #8B2E2E;
+      font-weight: 600;
+    }
+
+    @media (orientation: landscape) {
+      body {
+        align-items: center;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <p>Sending you to <a href="https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing">TAE Gemini</a>…</p>
+  <div class="wrap">
+    <h1>🎨 TAE Image Creator</h1>
+    <p class="intro">
+      You make cinematic, realistic AI images using <b>Nano Banana (Gemini 2.5 Flash)</b>.
+      Fill in the form below to create your perfect image (9:16 by default).
+    </p>
+
+    <div class="card">
+      <h2>🖼️ Step 1: Upload an image (optional)</h2>
+      <p>Used for edits. Skip if starting fresh.</p>
+      <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <div class="card">
+      <h2>✏️ Step 2: Describe what you want</h2>
+      <textarea id="prompt" placeholder="Example: A chill guy wearing a grey North Face hoodie holding a Cane Corso puppy under soft LED lighting."></textarea>
+    </div>
+
+    <div class="card">
+      <h2>📸 Step 3: Choose your camera vibe</h2>
+      <div class="checks" id="cameraChecks">
+        <label><input type="checkbox"><span>Close-up portrait</span></label>
+        <label><input type="checkbox"><span>Waist-up shot</span></label>
+        <label><input type="checkbox"><span>Full body</span></label>
+        <label><input type="checkbox"><span>Side profile</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💡 Step 4: Lighting style</h2>
+      <div class="checks" id="lightChecks">
+        <label><input type="checkbox"><span>Natural daylight</span></label>
+        <label><input type="checkbox"><span>Cinematic LED glow</span></label>
+        <label><input type="checkbox"><span>Warm indoor tone</span></label>
+        <label><input type="checkbox"><span>Moody / shadowy</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🌈 Step 5: Mood & energy</h2>
+      <div class="checks" id="moodChecks">
+        <label><input type="checkbox"><span>Chill</span></label>
+        <label><input type="checkbox"><span>Confident</span></label>
+        <label><input type="checkbox"><span>Funny</span></label>
+        <label><input type="checkbox"><span>Dreamy</span></label>
+        <label><input type="checkbox"><span>Chaotic</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Step 6: Ratio (pick one)</h2>
+      <div class="checks" id="ratioChecks">
+        <label><input type="radio" name="ratio" checked><span>9:16 Portrait (default)</span></label>
+        <label><input type="radio" name="ratio"><span>1:1 Square</span></label>
+        <label><input type="radio" name="ratio"><span>16:9 Landscape</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🐶 Step 7: Add-ons</h2>
+      <div class="checks" id="addonChecks">
+        <label><input type="checkbox"><span>Include animals</span></label>
+        <label><input type="checkbox"><span>Add props</span></label>
+        <label><input type="checkbox"><span>Add neon effects</span></label>
+        <label><input type="checkbox"><span>Y2K styling</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧠 Rules</h2>
+      <ul>
+        <li>No text, no logos, no watermarks.</li>
+        <li>Keep everything realistic and cinematic.</li>
+        <li>If multiple boxes are ticked, blend them logically.</li>
+        <li>Output only the image + one-line caption like “Cinematic chill with Cane Corso.”</li>
+      </ul>
+    </div>
+
+    <button id="generateBtn">Generate (9:16)</button>
+    <div id="status" class="muted"></div>
+    <div id="error"></div>
+  </div>
+
+  <script>
+    const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
+
+    function readChecked(selector) {
+      return [...document.querySelectorAll(selector)]
+        .filter(el => el.checked)
+        .map(el => el.nextElementSibling?.textContent?.trim())
+        .filter(Boolean);
+    }
+
+    function getRatio() {
+      const lbl = document.querySelector('#ratioChecks input[name="ratio"]:checked')?.nextElementSibling?.textContent || "9:16 Portrait (default)";
+      if (lbl.includes("1:1")) return "1:1";
+      if (lbl.includes("16:9")) return "16:9";
+      return "9:16";
+    }
+
+    function buildPrompt() {
+      const base = (document.getElementById("prompt")?.value || "").trim();
+      const camera   = readChecked('#cameraChecks input');
+      const lighting = readChecked('#lightChecks input');
+      const mood     = readChecked('#moodChecks input');
+      const addons   = readChecked('#addonChecks input');
+      const ratio    = getRatio();
+      const lines = [];
+      if (base) lines.push(base);
+      if (camera.length)   lines.push(`Camera vibe: ${camera.join(", ")}`);
+      if (lighting.length) lines.push(`Lighting: ${lighting.join(", ")}`);
+      if (mood.length)     lines.push(`Mood: ${mood.join(", ")}`);
+      if (addons.length)   lines.push(`Add-ons: ${addons.join(", ")}`);
+      lines.push(`Aspect ratio: ${ratio}`);
+      lines.push("Style: cinematic, realistic, natural skin texture, no text, no logos, no watermark.");
+      return lines.join("\n");
+    }
+
+    function showStatus(msg, isError = false) {
+      const ok = document.getElementById("status");
+      const er = document.getElementById("error");
+      if (isError) { if (er) er.textContent = msg; if (ok) ok.textContent = ""; }
+      else { if (ok) ok.textContent = msg; if (er) er.textContent = ""; }
+    }
+
+    document.getElementById("generateBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("generateBtn");
+      const userPrompt = buildPrompt();
+      if (!userPrompt) {
+        showStatus("Please write a prompt first.", true);
+        return;
+      }
+      btn.disabled = true;
+      showStatus("Copying prompt and opening Gemini…");
+
+      const finalPrompt = 
+`You are TAE Image Creator.
+
+Generate ONE cinematic, realistic image using Nano Banana (Gemini 2.5 Flash).
+If a photo was uploaded, treat this as an edit — preserve identity and lighting unless told otherwise.
+
+Reply ONLY with the generated image and a short title (max 5 words). No extra chat.
+
+User request:
+${userPrompt}
+
+Rules:
+- No text, no logos, no watermarks.
+- Keep it realistic and cinematic.
+- If multiple options were ticked, blend them logically.`;
+
+      try { await navigator.clipboard.writeText(finalPrompt); } catch (e) { /* ignore */ }
+
+      window.location.href = GEMINI_LINK;
+    });
+  </script>
 </body>
 </html>
