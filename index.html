@@ -6,7 +6,6 @@
 <title>TAE — Scene Builder</title>
 <meta name="color-scheme" content="light" />
 <meta name="theme-color" content="#A8B48F" />
-
 <style>
 :root{
   --bg:#A8B48F;     /* sage green */
@@ -16,73 +15,42 @@
   --btn:#3B2E2A;    /* button */
   --btnText:#F3EFED;
 }
-*{box-sizing:border-box}
-html,body{
-  background:var(--bg); color:var(--text);
-  font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  margin:0; padding:0;
-  min-height:100%;
+html,body{background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100%;overflow-x:hidden}
+.wrap{width:100%;max-width:640px;padding:28px;box-sizing:border-box}
+h1{margin:0 0 8px;text-align:left}
+.lead{color:var(--muted);font-size:15px;margin:6px 0 16px}
+.card{background:var(--panel);border:1px solid rgba(59,46,42,.25);border-radius:14px;padding:16px;margin:14px 0}
+.card h2{margin:0 0 8px;font-size:18px}
+label{font-weight:600;margin:6px 0 6px;display:block}
+input[type="text"], textarea{
+  width:100%;background:rgba(255,255,255,.45);color:var(--text);
+  border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:10px;box-sizing:border-box;font-size:15px
 }
-.wrap{width:100%;max-width:520px;margin:0 auto;padding:24px}
-h1{margin:8px 0 10px;text-align:center;font-size:34px}
-.intro{color:var(--text);opacity:.9;font-size:16px;margin:6px 0 18px;text-align:center}
-
-.card{
-  background:var(--panel);
-  border:1px solid rgba(59,46,42,.25);
-  border-radius:16px;
-  padding:16px; margin:14px 0;
-  box-shadow:0 2px 12px rgba(0,0,0,.06);
-}
-.card h2{margin:0 0 8px;font-size:18px;display:flex;gap:8px;align-items:center}
-label{font-weight:700;margin:8px 0 6px;display:block}
-
-input[type="text"], textarea, select{
-  width:100%; background:rgba(255,255,255,.5); color:var(--text);
-  border:1px solid rgba(59,46,42,.25);
-  border-radius:12px; padding:12px; font-size:15px;
-  outline:none;
-}
-textarea{min-height:90px; resize:vertical}
-.smallrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.smallrow select{flex:1 1 48%}
-
-button{
-  width:100%; background:var(--btn); color:var(--btnText);
-  border:0; border-radius:12px; padding:14px;
-  font-weight:800; font-size:16px; cursor:pointer; margin-top:12px;
-  box-shadow:0 2px 0 rgba(0,0,0,.18);
-}
-button:hover{filter:brightness(.95)}
+textarea{min-height:80px;resize:vertical}
+.smallrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+select{flex:1 1 46%;background:rgba(255,255,255,.45);border:1px solid rgba(59,46,42,.25);border-radius:10px;color:var(--text);padding:10px}
+button{background:var(--btn);color:var(--btnText);border:0;border-radius:12px;padding:14px 16px;font-weight:700;font-size:16px;cursor:pointer}
+button.ghost{background:#fff;color:var(--text);border:1px solid rgba(59,46,42,.25)}
 button[disabled]{opacity:.6;cursor:not-allowed}
-
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .actions button{flex:1}
-
 .muted{color:var(--muted);font-size:13px;margin-top:6px}
-#status{color:var(--muted);margin-top:8px}
-
-#promptBox{
-  background:rgba(255,255,255,.6);
-  border:1px dashed rgba(59,46,42,.35);
-  border-radius:12px; padding:12px;
-  white-space:pre-wrap; font-size:14px; color:var(--text)
-}
-
-/* tiny toast */
-.toast{
-  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-  background:#2f2a27; color:#fff; padding:10px 14px; border-radius:999px;
-  font-size:14px; opacity:0; pointer-events:none; transition:opacity .25s;
-}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2f2a27;color:#fff;padding:10px 14px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s}
 .toast.show{opacity:1}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+@media (max-width:520px){.wrap{padding:22px}}
 </style>
 </head>
-
 <body>
   <div class="wrap">
     <h1>🎨 TAE Image Creator</h1>
-    <p class="intro">Fill in the text boxes and we’ll create your perfect TAE Prompt.</p>
+    <p class="lead">Fill in the boxes and we’ll create your perfect TAE Prompt. Then open the generator to upload your photo and paste the prompt.</p>
+
+    <!-- Quick open to your Gemini app -->
+    <div class="cta">
+      <button id="openGemini">Open TAE Image Generator</button>
+      <button id="copyLink" class="ghost">Copy generator link</button>
+    </div>
 
     <!-- Builder -->
     <div class="card">
@@ -91,10 +59,10 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       <label>What scene do you want?</label>
       <textarea id="scene" placeholder="e.g., night-time city rooftop with neon signs, slight mist, a Cane Corso nearby"></textarea>
 
-      <label>What outfit?</label>
+      <label style="margin-top:10px;">What outfit?</label>
       <textarea id="outfit" placeholder="e.g., grey North Face hoodie, black cargos, clean trainers"></textarea>
 
-      <label>What are they doing?</label>
+      <label style="margin-top:10px;">What are they doing?</label>
       <textarea id="action" placeholder="e.g., leaning on the railing, holding the puppy, looking calm to camera"></textarea>
 
       <div class="smallrow">
@@ -123,26 +91,23 @@ button[disabled]{opacity:.6;cursor:not-allowed}
         </select>
       </div>
 
-      <button id="generate">Generate prompt</button>
+      <div class="actions">
+        <button id="generate">Generate prompt</button>
+        <button id="reset" class="ghost">Reset</button>
+      </div>
+
       <div id="status" class="muted"></div>
     </div>
 
     <!-- Generated Prompt -->
     <div class="card" id="promptCard" style="display:none;">
       <h2>🧠 TAE Prompt</h2>
-      <div id="promptBox">…</div>
+      <textarea id="promptBox" readonly style="width:100%;min-height:160px;background:#fff;border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:12px;"></textarea>
       <div class="actions">
-        <button id="copyBtn">Copy</button>
-        <button id="openGemini">Create image (opens Gemini)</button>
+        <button id="copyBtn">Copy prompt</button>
+        <button id="openGemini2" class="ghost">Open generator</button>
       </div>
-      <p class="muted">In Gemini: paste this prompt. If you have a reference photo, attach it and hit Send.</p>
-    </div>
-
-    <!-- Already have prompt -->
-    <div class="card">
-      <h2>⚡ Already have your prompt?</h2>
-      <p class="muted">If you already have your prompt, press below — upload, filter, create photo, upload your photo and paste your prompt!</p>
-      <button id="readyGemini">I’m ready — open Gemini</button>
+      <p class="muted">In the generator: upload your photo, paste this prompt, and generate.</p>
     </div>
   </div>
 
@@ -160,30 +125,24 @@ function buildTAEPrompt(){
   const mood = document.getElementById('mood').value;
   const ratio = document.getElementById('ratio').value;
 
-  const background = scene || "studio set or urban backdrop with subtle depth";
-  const outfitLine = outfit || "clean, neutral streetwear";
-  const sceneLine  = scene || "simple, cinematic scene";
-  const actionLine = action ? `Action: ${action}` : null;
-
   const blocks = [
     `Ratio: ${ratio} (portrait default). Realistic human look, cinematic tone, sharp detail. No text. No watermarks.`,
-    `Outfit: ${outfitLine}`,
-    `Scene: ${sceneLine}`,
-    `Background: ${background}`,
+    `Outfit: ${outfit || "clean, neutral streetwear"}`,
+    `Scene: ${scene || "simple, cinematic scene"}`,
+    `Background: ${scene || "studio set or urban backdrop with subtle depth"}`,
     `Camera: ${camera}`,
     `Lighting: ${lighting}`,
     `Mood: ${mood}`,
-    (actionLine || undefined),
+    (action ? `Action: ${action}` : null),
     `Negative Prompts: cartoonish, distorted, blurry, deformed hands, duplicated face`
   ].filter(Boolean);
 
-  return blocks.join("\\n");
+  return blocks.join("\n");
 }
 
 function showToast(msg="Copied"){
   const t=document.getElementById('toast');
-  t.textContent=msg;
-  t.classList.add('show');
+  t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),1200);
 }
 
@@ -191,26 +150,34 @@ document.getElementById('generate').addEventListener('click', ()=>{
   const s=document.getElementById('scene').value.trim();
   const o=document.getElementById('outfit').value.trim();
   const a=document.getElementById('action').value.trim();
-
   if(!s&&!o&&!a){
     document.getElementById('status').textContent="Add at least one detail (scene, outfit, or action).";
     return;
   }
-  document.getElementById('status').textContent="Creating TAE prompt…";
   const prompt=buildTAEPrompt();
-  document.getElementById('promptBox').textContent=prompt;
+  document.getElementById('promptBox').value=prompt;
   document.getElementById('promptCard').style.display="block";
   document.getElementById('status').textContent="Ready.";
 });
 
+document.getElementById('reset').addEventListener('click', ()=>{
+  ['scene','outfit','action'].forEach(id=>document.getElementById(id).value="");
+  document.getElementById('promptCard').style.display="none";
+  document.getElementById('status').textContent="";
+});
+
 document.getElementById('copyBtn').addEventListener('click', async()=>{
-  const txt=document.getElementById('promptBox').textContent;
+  const txt=document.getElementById('promptBox').value;
   if(!txt)return;
   try{await navigator.clipboard.writeText(txt);showToast("Prompt copied");}catch{}
 });
 
-document.getElementById('openGemini').addEventListener('click',()=>{window.open(GEMINI_LINK,'_blank');});
-document.getElementById('readyGemini').addEventListener('click',()=>{window.open(GEMINI_LINK,'_blank');});
+function openGemini(){ window.open(GEMINI_LINK, '_blank', 'noopener'); }
+document.getElementById('openGemini').addEventListener('click', openGemini);
+document.getElementById('openGemini2').addEventListener('click', openGemini);
+document.getElementById('copyLink').addEventListener('click', async()=>{
+  try{await navigator.clipboard.writeText(GEMINI_LINK);showToast("Link copied");}catch{}
+});
 </script>
 </body>
 </html>
