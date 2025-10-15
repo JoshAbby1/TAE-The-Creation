@@ -28,6 +28,7 @@
     overflow-x: hidden;
   }
 
+  /* portrait width, centered */
   .wrap { width:100%; max-width:420px; padding:24px; box-sizing:border-box; }
   h1 { margin:0 0 16px; color:var(--text); text-align:center; line-height:1.2; }
   .intro { margin:10px 0 18px; color:var(--muted); font-size:14px; }
@@ -169,23 +170,33 @@
     <div id="status" class="muted"></div>
     <div id="error"></div>
     <div id="result"></div>
+
+    <!-- Gemini panel (appears after copying prompt) -->
+    <div id="geminiPanel" style="display:none; margin-top:12px;">
+      <p class="muted">Prompt copied. Open your Gemini and paste to get the best quality.</p>
+      <button id="openGeminiBtn" style="width:100%; background:#3B2E2A; color:#F3EFED; border:0; border-radius:12px; padding:14px; font-weight:700; cursor:pointer; font-size:16px;">
+        ✨ Launch in Gemini
+      </button>
+    </div>
   </div>
 
   <script>
+  /** Your shared Gemini link (free) */
+  const GEMINI_LINK = "https://gemini.google.com/gem/1XSw1Y_hx5kBV-zTkUwHza7kdqnney1Hn?usp=sharing";
+
+  /* helpers */
   function readChecked(selector) {
     return [...document.querySelectorAll(selector)]
       .filter(el => el.checked)
       .map(el => el.nextElementSibling?.textContent?.trim())
       .filter(Boolean);
   }
-
   function getRatio() {
     const lbl = document.querySelector('#ratioChecks input[name="ratio"]:checked')?.nextElementSibling?.textContent || "9:16 Portrait (default)";
     if (lbl.includes("1:1")) return "1:1";
     if (lbl.includes("16:9")) return "16:9";
     return "9:16";
   }
-
   function buildPrompt() {
     const base = (document.getElementById("prompt")?.value || "").trim();
     const camera   = readChecked('#cameraChecks input');
@@ -204,7 +215,6 @@
     lines.push("Style: cinematic, realistic, natural skin texture, no text, no logos, no watermark.");
     return lines.join("\n");
   }
-
   function showStatus(msg, isError=false) {
     const ok = document.getElementById("status");
     const er = document.getElementById("error");
@@ -212,29 +222,11 @@
     else { if (ok) ok.textContent = msg; if (er) er.textContent = ""; }
   }
 
-  function showImage(url, title="TAE Image") {
-    const box = document.getElementById("result");
-    box.innerHTML = "";
-    const img = document.createElement("img");
-    img.alt = title;
-    img.src = url;
-    box.appendChild(img);
-  }
-
-  async function tryBackend(prompt, file) {
-    const form = new FormData();
-    form.append("prompt", prompt);
-    form.append("aspect", getRatio());
-    if (file) form.append("image", file);
-
-    const res = await fetch("/api/render", { method: "POST", body: form });
-    if (!res.ok) throw new Error(`Backend error ${res.status}`);
-    return await res.json();
-  }
-
-  async function onGenerate() {
+  /* Main click handler (free Gemini flow) */
+  document.getElementById("generateBtn")?.addEventListener("click", async () => {
     const btn = document.getElementById("generateBtn");
-    const file = document.getElementById("imageUpload")?.files?.[0] || null;
+    const gemPanel = document.getElementById("geminiPanel");
+    const openBtn = document.getElementById("openGeminiBtn");
     const userPrompt = buildPrompt();
 
     if (!userPrompt) {
@@ -243,24 +235,39 @@
     }
 
     btn.disabled = true;
-    showStatus("Generating… this can take a moment.");
+    showStatus("Preparing your Gemini prompt…");
+
+    // Full instruction for Gemini
+    const finalPrompt =
+`You are TAE Image Creator.
+
+Generate ONE cinematic, realistic image using Nano Banana (Gemini 2.5 Flash).
+If a photo was uploaded, treat this as an edit — preserve identity and lighting unless told otherwise.
+
+Reply ONLY with the generated image and a short title (max 5 words). No extra chat.
+
+User request:
+${userPrompt}
+
+Rules:
+- No text, no logos, no watermarks.
+- Keep it realistic and cinematic.
+- If multiple options were ticked, blend them logically.`;
 
     try {
-      const data = await tryBackend(userPrompt, file);
-      const imageUrl = data.imageUrl || data.url || data.image || "";
-      if (!imageUrl) throw new Error("No image URL returned.");
-      showImage(imageUrl);
-      showStatus("Done.");
-    } catch (err) {
-      console.warn(err);
-      try { await navigator.clipboard.writeText(userPrompt); } catch {}
-      showStatus("Backend unavailable. Prompt copied to clipboard — paste it manually into Gemini.", true);
+      await navigator.clipboard.writeText(finalPrompt);
+      showStatus("Prompt copied — tap ‘Launch in Gemini’ below and paste.", false);
+      gemPanel.style.display = "block";
+      // open Gemini in the same tab when user clicks
+      openBtn.onclick = () => { window.location.href = GEMINI_LINK; };
+    } catch (e) {
+      showStatus("Couldn't copy automatically. Open Gemini and paste manually.", true);
+      gemPanel.style.display = "block";
+      openBtn.onclick = () => { window.location.href = GEMINI_LINK; };
     } finally {
       btn.disabled = false;
     }
-  }
-
-  document.getElementById("generateBtn")?.addEventListener("click", onGenerate);
+  });
   </script>
 </body>
 </html>
