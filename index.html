@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>TAE — Image Creator</title>
+<title>TAE — Scene Builder</title>
 <meta name="color-scheme" content="light" />
 <meta name="theme-color" content="#A8B48F" />
 
@@ -16,36 +16,201 @@
   --btn:#3B2E2A;    /* button */
   --btnText:#F3EFED;
 }
+*{box-sizing:border-box}
 html,body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:system-ui,Arial,sans-serif;
-  margin:0;
-  padding:0;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
+  background:var(--bg); color:var(--text);
+  font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin:0; padding:0;
   min-height:100%;
-  overflow-x:hidden;
 }
-.wrap{
-  width:100%;
-  max-width:420px;
-  padding:24px;
-  box-sizing:border-box;
-}
-h1{
-  margin:0 0 12px;
-  text-align:center;
-}
-.intro{
-  color:var(--muted);
-  font-size:15px;
-  margin:6px 0 16px;
-  text-align:center;
-  font-weight:500;
-}
+.wrap{width:100%;max-width:520px;margin:0 auto;padding:24px}
+h1{margin:8px 0 10px;text-align:center;font-size:34px}
+.intro{color:var(--text);opacity:.9;font-size:16px;margin:6px 0 18px;text-align:center}
+
 .card{
   background:var(--panel);
   border:1px solid rgba(59,46,42,.25);
-  border
+  border-radius:16px;
+  padding:16px; margin:14px 0;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.card h2{margin:0 0 8px;font-size:18px;display:flex;gap:8px;align-items:center}
+label{font-weight:700;margin:8px 0 6px;display:block}
+
+input[type="text"], textarea, select{
+  width:100%; background:rgba(255,255,255,.5); color:var(--text);
+  border:1px solid rgba(59,46,42,.25);
+  border-radius:12px; padding:12px; font-size:15px;
+  outline:none;
+}
+textarea{min-height:90px; resize:vertical}
+.smallrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.smallrow select{flex:1 1 48%}
+
+button{
+  width:100%; background:var(--btn); color:var(--btnText);
+  border:0; border-radius:12px; padding:14px;
+  font-weight:800; font-size:16px; cursor:pointer; margin-top:12px;
+  box-shadow:0 2px 0 rgba(0,0,0,.18);
+}
+button:hover{filter:brightness(.95)}
+button[disabled]{opacity:.6;cursor:not-allowed}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.actions button{flex:1}
+
+.muted{color:var(--muted);font-size:13px;margin-top:6px}
+#status{color:var(--muted);margin-top:8px}
+
+#promptBox{
+  background:rgba(255,255,255,.6);
+  border:1px dashed rgba(59,46,42,.35);
+  border-radius:12px; padding:12px;
+  white-space:pre-wrap; font-size:14px; color:var(--text)
+}
+
+/* tiny toast */
+.toast{
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+  background:#2f2a27; color:#fff; padding:10px 14px; border-radius:999px;
+  font-size:14px; opacity:0; pointer-events:none; transition:opacity .25s;
+}
+.toast.show{opacity:1}
+</style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>🎨 TAE Image Creator</h1>
+    <p class="intro">Fill in the text boxes and we’ll create your perfect TAE Prompt.</p>
+
+    <!-- Builder -->
+    <div class="card">
+      <h2>🧩 Fill these</h2>
+
+      <label>What scene do you want?</label>
+      <textarea id="scene" placeholder="e.g., night-time city rooftop with neon signs, slight mist, a Cane Corso nearby"></textarea>
+
+      <label>What outfit?</label>
+      <textarea id="outfit" placeholder="e.g., grey North Face hoodie, black cargos, clean trainers"></textarea>
+
+      <label>What are they doing?</label>
+      <textarea id="action" placeholder="e.g., leaning on the railing, holding the puppy, looking calm to camera"></textarea>
+
+      <div class="smallrow">
+        <select id="camera">
+          <option value="waist-up, 85mm lens, eye-level">Camera: waist-up, 85mm, eye-level</option>
+          <option value="close-up portrait, 85mm lens, shallow depth of field">Camera: close-up, 85mm, shallow DoF</option>
+          <option value="full body, slight low angle, 50mm lens">Camera: full body, 50mm, slight low angle</option>
+        </select>
+        <select id="lighting">
+          <option value="cinematic LED glow with soft shadow">Lighting: cinematic LED glow</option>
+          <option value="natural daylight, soft bounce">Lighting: natural daylight</option>
+          <option value="warm indoor tone, soft shadow">Lighting: warm indoor</option>
+          <option value="moody shadows, rim light on subject">Lighting: moody / rim light</option>
+        </select>
+        <select id="mood">
+          <option value="chill">Mood: chill</option>
+          <option value="confident">Mood: confident</option>
+          <option value="dreamy">Mood: dreamy</option>
+          <option value="funny">Mood: funny</option>
+          <option value="chaotic">Mood: chaotic</option>
+        </select>
+        <select id="ratio">
+          <option value="9:16" selected>Ratio: 9:16 (portrait)</option>
+          <option value="1:1">Ratio: 1:1</option>
+          <option value="16:9">Ratio: 16:9</option>
+        </select>
+      </div>
+
+      <button id="generate">Generate prompt</button>
+      <div id="status" class="muted"></div>
+    </div>
+
+    <!-- Generated Prompt -->
+    <div class="card" id="promptCard" style="display:none;">
+      <h2>🧠 TAE Prompt</h2>
+      <div id="promptBox">…</div>
+      <div class="actions">
+        <button id="copyBtn">Copy</button>
+        <button id="openGemini">Create image (opens Gemini)</button>
+      </div>
+      <p class="muted">In Gemini: paste this prompt. If you have a reference photo, attach it and hit Send.</p>
+    </div>
+
+    <!-- Already have prompt -->
+    <div class="card">
+      <h2>⚡ Already have your prompt?</h2>
+      <p class="muted">If you already have your prompt, press below — upload, filter, create photo, upload your photo and paste your prompt!</p>
+      <button id="readyGemini">I’m ready — open Gemini</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Copied</div>
+
+<script>
+const GEMINI_LINK = "https://ai.studio/apps/drive/1HNgcNJJ7otCBPCyqAI36jLpS6pkh6H7B";
+
+function buildTAEPrompt(){
+  const scene  = document.getElementById('scene').value.trim();
+  const outfit = document.getElementById('outfit').value.trim();
+  const action = document.getElementById('action').value.trim();
+  const camera = document.getElementById('camera').value;
+  const lighting = document.getElementById('lighting').value;
+  const mood = document.getElementById('mood').value;
+  const ratio = document.getElementById('ratio').value;
+
+  const background = scene || "studio set or urban backdrop with subtle depth";
+  const outfitLine = outfit || "clean, neutral streetwear";
+  const sceneLine  = scene || "simple, cinematic scene";
+  const actionLine = action ? `Action: ${action}` : null;
+
+  const blocks = [
+    `Ratio: ${ratio} (portrait default). Realistic human look, cinematic tone, sharp detail. No text. No watermarks.`,
+    `Outfit: ${outfitLine}`,
+    `Scene: ${sceneLine}`,
+    `Background: ${background}`,
+    `Camera: ${camera}`,
+    `Lighting: ${lighting}`,
+    `Mood: ${mood}`,
+    (actionLine || undefined),
+    `Negative Prompts: cartoonish, distorted, blurry, deformed hands, duplicated face`
+  ].filter(Boolean);
+
+  return blocks.join("\\n");
+}
+
+function showToast(msg="Copied"){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1200);
+}
+
+document.getElementById('generate').addEventListener('click', ()=>{
+  const s=document.getElementById('scene').value.trim();
+  const o=document.getElementById('outfit').value.trim();
+  const a=document.getElementById('action').value.trim();
+
+  if(!s&&!o&&!a){
+    document.getElementById('status').textContent="Add at least one detail (scene, outfit, or action).";
+    return;
+  }
+  document.getElementById('status').textContent="Creating TAE prompt…";
+  const prompt=buildTAEPrompt();
+  document.getElementById('promptBox').textContent=prompt;
+  document.getElementById('promptCard').style.display="block";
+  document.getElementById('status').textContent="Ready.";
+});
+
+document.getElementById('copyBtn').addEventListener('click', async()=>{
+  const txt=document.getElementById('promptBox').textContent;
+  if(!txt)return;
+  try{await navigator.clipboard.writeText(txt);showToast("Prompt copied");}catch{}
+});
+
+document.getElementById('openGemini').addEventListener('click',()=>{window.open(GEMINI_LINK,'_blank');});
+document.getElementById('readyGemini').addEventListener('click',()=>{window.open(GEMINI_LINK,'_blank');});
+</script>
+</body>
+</html>
