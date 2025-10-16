@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>TAE — Scene Builder</title>
+<title>TAE — Image Creator</title>
 <meta name="color-scheme" content="light" />
 <meta name="theme-color" content="#A8B48F" />
 <style>
@@ -37,20 +37,15 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .muted{color:var(--muted);font-size:13px;margin-top:6px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2f2a27;color:#fff;padding:10px 14px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s}
 .toast.show{opacity:1}
-.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+img#taeImage{width:100%;border-radius:12px;margin-top:10px;display:none}
+#error{color:#8B2E2E;font-weight:700;margin-top:8px}
 @media (max-width:520px){.wrap{padding:22px}}
 </style>
 </head>
 <body>
   <div class="wrap">
     <h1>🎨 TAE Image Creator</h1>
-    <p class="lead">Fill in the boxes and we’ll create your perfect TAE Prompt. Then open the generator to upload your photo and paste the prompt.</p>
-
-    <!-- Quick open to your Gemini app -->
-    <div class="cta">
-      <button id="openGemini">Open TAE Image Generator</button>
-      <button id="copyLink" class="ghost">Copy generator link</button>
-    </div>
+    <p class="lead">Build your scene, we refine the prompt with Gemini, then generate the image — all through your rotating keys (no AI Studio quota).</p>
 
     <!-- Builder -->
     <div class="card">
@@ -92,29 +87,37 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       </div>
 
       <div class="actions">
-        <button id="generate">Generate prompt</button>
-        <button id="reset" class="ghost">Reset</button>
+        <button id="generateBtn">Generate</button>
+        <button id="resetBtn" class="ghost">Reset</button>
       </div>
 
       <div id="status" class="muted"></div>
+      <div id="error"></div>
     </div>
 
-    <!-- Generated Prompt -->
-    <div class="card" id="promptCard" style="display:none;">
-      <h2>🧠 TAE Prompt</h2>
+    <!-- Output -->
+    <div class="card" id="outCard" style="display:none;">
+      <h2>🧠 Refined Prompt</h2>
       <textarea id="promptBox" readonly style="width:100%;min-height:160px;background:#fff;border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:12px;"></textarea>
       <div class="actions">
-        <button id="copyBtn">Copy prompt</button>
-        <button id="openGemini2" class="ghost">Open generator</button>
+        <button id="copyPrompt">Copy prompt</button>
+        <button id="regenBtn" class="ghost">Re-generate</button>
       </div>
-      <p class="muted">In the generator: upload your photo, paste this prompt, and generate.</p>
+      <img id="taeImage" alt="Generated image" />
     </div>
   </div>
 
   <div id="toast" class="toast">Copied</div>
 
 <script>
-const GEMINI_LINK = "https://ai.studio/apps/drive/1HNgcNJJ7otCBPCyqAI36jLpS6pkh6H7B";
+function showToast(msg="Copied"){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1200);
+}
+
+function showStatus(txt){ document.getElementById('status').textContent = txt || ""; }
+function showErr(txt){ document.getElementById('error').textContent = txt || ""; }
 
 function buildTAEPrompt(){
   const scene  = document.getElementById('scene').value.trim();
@@ -140,43 +143,82 @@ function buildTAEPrompt(){
   return blocks.join("\n");
 }
 
-function showToast(msg="Copied"){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),1200);
+async function refineWithGemini(rawPrompt){
+  // Uses your rotating keys via /api/generate
+  const r = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: `Refine this into a single, clean, safe image prompt. Keep it concise, cinematic, realistic. Max 120 words.\n\n${rawPrompt}`
+    })
+  });
+  const data = await r.json();
+  if (data?.output) return data.output;
+  return rawPrompt;
 }
 
-document.getElementById('generate').addEventListener('click', ()=>{
-  const s=document.getElementById('scene').value.trim();
-  const o=document.getElementById('outfit').value.trim();
-  const a=document.getElementById('action').value.trim();
-  if(!s&&!o&&!a){
-    document.getElementById('status').textContent="Add at least one detail (scene, outfit, or action).";
-    return;
+async function generateImage(refinedPrompt, ratio){
+  const r = await fetch("/api/generate-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: refinedPrompt, ratio })
+  });
+  return r.json();
+}
+
+async function runGenerate(){
+  showErr(""); showStatus("");
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+
+  try{
+    const base = buildTAEPrompt();
+    if (!base) { showErr("Add at least one detail (scene, outfit, or action)."); return; }
+
+    showStatus("Refining prompt with Gemini…");
+    const refined = await refineWithGemini(base);
+
+    document.getElementById('outCard').style.display = "block";
+    const box = document.getElementById('promptBox');
+    box.value = refined;
+
+    showStatus("Generating image…");
+    const ratio = document.getElementById('ratio').value;
+    const imgData = await generateImage(refined, ratio);
+
+    if (imgData?.url) {
+      const img = document.getElementById('taeImage');
+      img.src = imgData.url;
+      img.style.display = "block";
+      showStatus("Done.");
+    } else {
+      showErr(imgData?.error || "Image failed.");
+      showStatus("");
+    }
+  } catch(e){
+    console.error(e);
+    showErr("Unexpected error. Try again.");
+  } finally {
+    btn.disabled = false;
   }
-  const prompt=buildTAEPrompt();
-  document.getElementById('promptBox').value=prompt;
-  document.getElementById('promptCard').style.display="block";
-  document.getElementById('status').textContent="Ready.";
-});
+}
 
-document.getElementById('reset').addEventListener('click', ()=>{
+document.getElementById('generateBtn').addEventListener('click', runGenerate);
+
+document.getElementById('regenBtn').addEventListener('click', runGenerate);
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
   ['scene','outfit','action'].forEach(id=>document.getElementById(id).value="");
-  document.getElementById('promptCard').style.display="none";
-  document.getElementById('status').textContent="";
+  document.getElementById('outCard').style.display="none";
+  document.getElementById('promptBox').value="";
+  const img=document.getElementById('taeImage'); img.src=""; img.style.display="none";
+  showStatus(""); showErr("");
 });
 
-document.getElementById('copyBtn').addEventListener('click', async()=>{
+document.getElementById('copyPrompt').addEventListener('click', async()=>{
   const txt=document.getElementById('promptBox').value;
   if(!txt)return;
   try{await navigator.clipboard.writeText(txt);showToast("Prompt copied");}catch{}
-});
-
-function openGemini(){ window.open(GEMINI_LINK, '_blank', 'noopener'); }
-document.getElementById('openGemini').addEventListener('click', openGemini);
-document.getElementById('openGemini2').addEventListener('click', openGemini);
-document.getElementById('copyLink').addEventListener('click', async()=>{
-  try{await navigator.clipboard.writeText(GEMINI_LINK);showToast("Link copied");}catch{}
 });
 </script>
 </body>
