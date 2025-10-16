@@ -1,225 +1,52 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>TAE — Image Creator</title>
-<meta name="color-scheme" content="light" />
-<meta name="theme-color" content="#A8B48F" />
-<style>
-:root{
-  --bg:#A8B48F;     /* sage green */
-  --panel:#B7C19C;  /* lighter sage */
-  --text:#3B2E2A;   /* dark brown */
-  --muted:#5A4A44;  /* medium brown */
-  --btn:#3B2E2A;    /* button */
-  --btnText:#F3EFED;
-}
-html,body{background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100%;overflow-x:hidden}
-.wrap{width:100%;max-width:640px;padding:28px;box-sizing:border-box}
-h1{margin:0 0 8px;text-align:left}
-.lead{color:var(--muted);font-size:15px;margin:6px 0 16px}
-.card{background:var(--panel);border:1px solid rgba(59,46,42,.25);border-radius:14px;padding:16px;margin:14px 0}
-.card h2{margin:0 0 8px;font-size:18px}
-label{font-weight:600;margin:6px 0 6px;display:block}
-input[type="text"], textarea{
-  width:100%;background:rgba(255,255,255,.45);color:var(--text);
-  border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:10px;box-sizing:border-box;font-size:15px
-}
-textarea{min-height:80px;resize:vertical}
-.smallrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-select{flex:1 1 46%;background:rgba(255,255,255,.45);border:1px solid rgba(59,46,42,.25);border-radius:10px;color:var(--text);padding:10px}
-button{background:var(--btn);color:var(--btnText);border:0;border-radius:12px;padding:14px 16px;font-weight:700;font-size:16px;cursor:pointer}
-button.ghost{background:#fff;color:var(--text);border:1px solid rgba(59,46,42,.25)}
-button[disabled]{opacity:.6;cursor:not-allowed}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.actions button{flex:1}
-.muted{color:var(--muted);font-size:13px;margin-top:6px}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#2f2a27;color:#fff;padding:10px 14px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s}
-.toast.show{opacity:1}
-img#taeImage{width:100%;border-radius:12px;margin-top:10px;display:none}
-#error{color:#8B2E2E;font-weight:700;margin-top:8px}
-@media (max-width:520px){.wrap{padding:22px}}
-</style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>🎨 TAE Image Creator</h1>
-    <p class="lead">Build your scene, we refine the prompt with Gemini, then generate the image — all through your rotating keys (no AI Studio quota).</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TAE The Image Creation</title>
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background: #f7f7f7;
+        color: #222;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+      }
+      h1 {
+        margin-top: 80px;
+        font-size: 2rem;
+      }
+      p {
+        color: #555;
+        margin-bottom: 30px;
+      }
+      .btn {
+        background-color: #3b3b3b;
+        color: white;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .btn:hover {
+        background-color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Welcome to TAE The Image Creation</h1>
+    <p>Create AI-powered images easily — powered by Gemini.</p>
 
-    <!-- Builder -->
-    <div class="card">
-      <h2>🧩 Fill these</h2>
-
-      <label>What scene do you want?</label>
-      <textarea id="scene" placeholder="e.g., night-time city rooftop with neon signs, slight mist, a Cane Corso nearby"></textarea>
-
-      <label style="margin-top:10px;">What outfit?</label>
-      <textarea id="outfit" placeholder="e.g., grey North Face hoodie, black cargos, clean trainers"></textarea>
-
-      <label style="margin-top:10px;">What are they doing?</label>
-      <textarea id="action" placeholder="e.g., leaning on the railing, holding the puppy, looking calm to camera"></textarea>
-
-      <div class="smallrow">
-        <select id="camera">
-          <option value="waist-up, 85mm lens, eye-level">Camera: waist-up, 85mm, eye-level</option>
-          <option value="close-up portrait, 85mm lens, shallow depth of field">Camera: close-up, 85mm, shallow DoF</option>
-          <option value="full body, slight low angle, 50mm lens">Camera: full body, 50mm, slight low angle</option>
-        </select>
-        <select id="lighting">
-          <option value="cinematic LED glow with soft shadow">Lighting: cinematic LED glow</option>
-          <option value="natural daylight, soft bounce">Lighting: natural daylight</option>
-          <option value="warm indoor tone, soft shadow">Lighting: warm indoor</option>
-          <option value="moody shadows, rim light on subject">Lighting: moody / rim light</option>
-        </select>
-        <select id="mood">
-          <option value="chill">Mood: chill</option>
-          <option value="confident">Mood: confident</option>
-          <option value="dreamy">Mood: dreamy</option>
-          <option value="funny">Mood: funny</option>
-          <option value="chaotic">Mood: chaotic</option>
-        </select>
-        <select id="ratio">
-          <option value="9:16" selected>Ratio: 9:16 (portrait)</option>
-          <option value="1:1">Ratio: 1:1</option>
-          <option value="16:9">Ratio: 16:9</option>
-        </select>
-      </div>
-
-      <div class="actions">
-        <button id="generateBtn">Generate</button>
-        <button id="resetBtn" class="ghost">Reset</button>
-      </div>
-
-      <div id="status" class="muted"></div>
-      <div id="error"></div>
-    </div>
-
-    <!-- Output -->
-    <div class="card" id="outCard" style="display:none;">
-      <h2>🧠 Refined Prompt</h2>
-      <textarea id="promptBox" readonly style="width:100%;min-height:160px;background:#fff;border:1px solid rgba(59,46,42,.25);border-radius:10px;padding:12px;"></textarea>
-      <div class="actions">
-        <button id="copyPrompt">Copy prompt</button>
-        <button id="regenBtn" class="ghost">Re-generate</button>
-      </div>
-      <img id="taeImage" alt="Generated image" />
-    </div>
-  </div>
-
-  <div id="toast" class="toast">Copied</div>
-
-<script>
-function showToast(msg="Copied"){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),1200);
-}
-
-function showStatus(txt){ document.getElementById('status').textContent = txt || ""; }
-function showErr(txt){ document.getElementById('error').textContent = txt || ""; }
-
-function buildTAEPrompt(){
-  const scene  = document.getElementById('scene').value.trim();
-  const outfit = document.getElementById('outfit').value.trim();
-  const action = document.getElementById('action').value.trim();
-  const camera = document.getElementById('camera').value;
-  const lighting = document.getElementById('lighting').value;
-  const mood = document.getElementById('mood').value;
-  const ratio = document.getElementById('ratio').value;
-
-  const blocks = [
-    `Ratio: ${ratio} (portrait default). Realistic human look, cinematic tone, sharp detail. No text. No watermarks.`,
-    `Outfit: ${outfit || "clean, neutral streetwear"}`,
-    `Scene: ${scene || "simple, cinematic scene"}`,
-    `Background: ${scene || "studio set or urban backdrop with subtle depth"}`,
-    `Camera: ${camera}`,
-    `Lighting: ${lighting}`,
-    `Mood: ${mood}`,
-    (action ? `Action: ${action}` : null),
-    `Negative Prompts: cartoonish, distorted, blurry, deformed hands, duplicated face`
-  ].filter(Boolean);
-
-  return blocks.join("\n");
-}
-
-async function refineWithGemini(rawPrompt){
-  // Uses your rotating keys via /api/generate
-  const r = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt: `Refine this into a single, clean, safe image prompt. Keep it concise, cinematic, realistic. Max 120 words.\n\n${rawPrompt}`
-    })
-  });
-  const data = await r.json();
-  if (data?.output) return data.output;
-  return rawPrompt;
-}
-
-async function generateImage(refinedPrompt, ratio){
-  const r = await fetch("/api/generate-image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: refinedPrompt, ratio })
-  });
-  return r.json();
-}
-
-async function runGenerate(){
-  showErr(""); showStatus("");
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-
-  try{
-    const base = buildTAEPrompt();
-    if (!base) { showErr("Add at least one detail (scene, outfit, or action)."); return; }
-
-    showStatus("Refining prompt with Gemini…");
-    const refined = await refineWithGemini(base);
-
-    document.getElementById('outCard').style.display = "block";
-    const box = document.getElementById('promptBox');
-    box.value = refined;
-
-    showStatus("Generating image…");
-    const ratio = document.getElementById('ratio').value;
-    const imgData = await generateImage(refined, ratio);
-
-    if (imgData?.url) {
-      const img = document.getElementById('taeImage');
-      img.src = imgData.url;
-      img.style.display = "block";
-      showStatus("Done.");
-    } else {
-      showErr(imgData?.error || "Image failed.");
-      showStatus("");
-    }
-  } catch(e){
-    console.error(e);
-    showErr("Unexpected error. Try again.");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-document.getElementById('generateBtn').addEventListener('click', runGenerate);
-
-document.getElementById('regenBtn').addEventListener('click', runGenerate);
-
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  ['scene','outfit','action'].forEach(id=>document.getElementById(id).value="");
-  document.getElementById('outCard').style.display="none";
-  document.getElementById('promptBox').value="";
-  const img=document.getElementById('taeImage'); img.src=""; img.style.display="none";
-  showStatus(""); showErr("");
-});
-
-document.getElementById('copyPrompt').addEventListener('click', async()=>{
-  const txt=document.getElementById('promptBox').value;
-  if(!txt)return;
-  try{await navigator.clipboard.writeText(txt);showToast("Prompt copied");}catch{}
-});
-</script>
-</body>
+    <!-- The new button that takes you to Gemini -->
+    <button
+      class="btn"
+      onclick="window.location.href='https://aistudio.google.com/u/0/app/YOUR-GEMINI-APP-LINK-HERE';"
+    >
+      Go to Generate Image
+    </button>
+  </body>
 </html>
